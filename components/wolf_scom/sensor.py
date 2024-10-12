@@ -31,6 +31,9 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_ERROR_CODE): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_RPM): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_BOILER_STATUS): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
+}).extend({
+    cv.GenerateID(): cv.declare_id(Sensor),
+    cv.GenerateID(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom)
 })
 
 def to_code(config):

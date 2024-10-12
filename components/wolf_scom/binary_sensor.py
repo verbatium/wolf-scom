@@ -21,6 +21,9 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_PUMP): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_HEAT): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_THREE_WAY_VALVE): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
+}).extend({
+    cv.GenerateID(): cv.declare_id(BinarySensor),
+    cv.GenerateID(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom)
 })
 
 def to_code(config):
