@@ -28,25 +28,25 @@ def to_code(config):
 
     if CONF_HEATING in config:
         conf = config[CONF_HEATING]
-        sens = yield binary_sensor.new_sensor(conf)
+        sens = yield binary_sensor.new_binary_sensor(conf)
         cg.add(paren.set_heating_day_sensor(sens))
 
     if CONF_HOT_WATER in config:
         conf = config[CONF_HOT_WATER]
-        sens = yield binary_sensor.new_sensor(conf)
+        sens = yield binary_sensor.new_binary_sensor(conf)
         cg.add(paren.set_hot_water_day_sensor(sens))
 
     if CONF_PUMP in config:
         conf = config[CONF_PUMP]
-        sens = yield binary_sensor.new_sensor(conf)
+        sens = yield binary_sensor.new_binary_sensor(conf)
         cg.add(paren.set_pump_sensor(sens))
 
     if CONF_HEAT in config:
         conf = config[CONF_HEAT]
-        sens = yield binary_sensor.new_sensor(conf)
+        sens = yield binary_sensor.new_binary_sensor(conf)
         cg.add(paren.set_heat_sensor(sens))
 
     if CONF_THREE_WAY_VALVE in config:
         conf = config[CONF_THREE_WAY_VALVE]
-        sens = yield binary_sensor.new_sensor(conf)
+        sens = yield binary_sensor.new_binary_sensor(conf)
         cg.add(paren.set_three_way_valve_sensor(sens))
