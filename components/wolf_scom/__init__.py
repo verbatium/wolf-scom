@@ -13,9 +13,10 @@ wolf_scom_ns = cg.esphome_ns.namespace('wolf_scom')
 
 WolfScom = wolf_scom_ns.class_('WolfScom', cg.Component, uart.UARTDevice)
 
-CONFIG_SCHEMA = cv.Schema({
+CONFIG_SCHEMA = (cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
-}).extend(cv.COMPONENT_SCHEMA)
+}).extend(cv.COMPONENT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA))
+
 
 def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
