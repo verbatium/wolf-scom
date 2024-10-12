@@ -4,7 +4,7 @@
 #include "esphome/components/uart/uart.h"
 namespace esphome {
     namespace wolf_scom {
-        class WolfScom : public Component, public UARTDevice {
+        class WolfScom : public uart::UARTDevice, public Component  {
          public:
           WolfScom(UARTComponent *parent) : UARTDevice(parent) {}
 
