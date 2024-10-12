@@ -12,8 +12,6 @@ CONF_PUMP = "pump"
 CONF_THREE_WAY_VALVE = "three_way_valve"
 
 binary_sensor_ns = cg.esphome_ns.namespace('binary_sensor')
-BinarySensor = binary_sensor_ns.class_('BinarySensor', binary_sensor.BinarySensor, cg.Nameable)
-
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
     cv.Optional(CONF_HEATING): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
@@ -22,7 +20,6 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_HEAT): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_THREE_WAY_VALVE): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
 }).extend({
-    cv.GenerateID(): cv.declare_id(BinarySensor),
     cv.GenerateID(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom)
 })
 

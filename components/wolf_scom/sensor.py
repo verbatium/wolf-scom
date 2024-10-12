@@ -17,7 +17,6 @@ CONF_RPM = "rpm"
 CONF_BOILER_STATUS = "boiler_status"
 
 sensor_ns = cg.esphome_ns.namespace('sensor')
-Sensor = sensor_ns.class_('Sensor', sensor.Sensor, cg.Nameable)
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
@@ -32,7 +31,6 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_RPM): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_BOILER_STATUS): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
 }).extend({
-    cv.GenerateID(): cv.declare_id(Sensor),
     cv.GenerateID(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom)
 })
 
