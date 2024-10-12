@@ -32,6 +32,23 @@ namespace esphome {
           void setup() override;
           void loop() override;
           void dump_config() override;
+         private:
+             uint8_t last_target_flow_temperature = -1;  
+             uint8_t last_outside_temperature = -1;  
+             uint8_t last_dwt_outside_temperature = -1;  
+             uint8_t last_flow_temperature = -1;  
+             uint8_t last_water_temperature = -1;  
+             uint8_t last_target_water_temperature = -1;  
+             uint8_t last_error_code = -1;  
+             uint8_t last_rpm = -1;  
+             uint8_t last_boiler_status = -1;  
+             uint8_t last_operation_mode = -1;
+             uint8_t last_heating_day = -1;
+             uint8_t last_hot_water_day = -1;
+             uint8_t last_pump = -1;
+             uint8_t last_three_way_valve = -1;
+             uint8_t last_heat = -1;
+
 
          protected:
           std::vector<uint8_t> buffer_;
