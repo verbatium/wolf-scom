@@ -10,8 +10,8 @@ namespace esphome {
         class WolfScom : public uart::UARTDevice, public Component  {
          public:
           void set_target_flow_temperature_sensor(sensor::Sensor *sensor) { target_flow_temperature_sensor = sensor; }
-          void set_heating_day_sensor(sensor::Sensor *sensor) { heating_day_sensor = sensor; }
-          void set_hot_water_day_sensor(sensor::Sensor *sensor) { hot_water_day_sensor = sensor; }
+          void set_heating_day_sensor(sensor::BinarySensor *sensor) { heating_day_sensor = sensor; }
+          void set_hot_water_day_sensor(sensor::BinarySensor *sensor) { hot_water_day_sensor = sensor; }
           void set_operation_mode_sensor(sensor::Sensor *sensor) { operation_mode_sensor = sensor; }
           void set_outside_temperature_sensor(sensor::Sensor *sensor) { outside_temperature_sensor = sensor; }
           void set_dwt_outside_temperature_sensor(sensor::Sensor *sensor) { dwt_outside_temperature_sensor = sensor; }
@@ -39,8 +39,8 @@ namespace esphome {
           bool process_packet();
 
           sensor::Sensor *target_flow_temperature_sensor = nullptr;
-          sensor::Sensor *heating_day_sensor = nullptr;
-          sensor::Sensor *hot_water_day_sensor = nullptr;
+          sensor::BinarySensor *heating_day_sensor = nullptr;
+          sensor::BinarySensor *hot_water_day_sensor = nullptr;
           sensor::Sensor *operation_mode_sensor = nullptr;
           sensor::Sensor *outside_temperature_sensor = nullptr;
           sensor::Sensor *dwt_outside_temperature_sensor = nullptr;
