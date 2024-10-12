@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
+
 from esphome.const import CONF_ID, UNIT_EMPTY, ICON_EMPTY
 from . import WolfScom, CONF_WOLF_SCOM_ID
 
@@ -15,11 +16,11 @@ binary_sensor_ns = cg.esphome_ns.namespace('binary_sensor')
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
     cv.Required(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom),
-    cv.Optional(CONF_HEATING): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_HOT_WATER): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_PUMP): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_HEAT): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_THREE_WAY_VALVE): binary_sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
+    cv.Optional(CONF_HEATING): binary_sensor.PLATFORM_SCHEMA.extend(),
+    cv.Optional(CONF_HOT_WATER): binary_sensor.PLATFORM_SCHEMA.extend(),
+    cv.Optional(CONF_PUMP): binary_sensor.PLATFORM_SCHEMA.extend(),
+    cv.Optional(CONF_HEAT): binary_sensor.PLATFORM_SCHEMA.extend(),
+    cv.Optional(CONF_THREE_WAY_VALVE): binary_sensor.PLATFORM_SCHEMA.extend(),
 }).extend({cv.GenerateID(): cv.declare_id(WolfScom)})
 
 def to_code(config):

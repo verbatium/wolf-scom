@@ -1,10 +1,10 @@
 #include "esphome/core/log.h"
-#include "empty_uart_component.h"
+#include "wolf_scom.h"
 
 namespace esphome {
 namespace wolf_scom {
 
-static const char *TAG = "empty_uart_component.component";
+static const char *TAG = "wolf_scom.component";
 
 void WolfScom::setup() {
     ESP_LOGCONFIG(TAG, "Setting up WolfScom sensors...");

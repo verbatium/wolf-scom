@@ -24,19 +24,26 @@ temperature_schema = sensor.sensor_schema(
     state_class=STATE_CLASS_MEASUREMENT,
 ).extend()
 
+empty_schema = sensor.sensor_schema(
+    unit_of_measurement=UNIT_EMPTY,
+    accuracy_decimals=1,
+    icon=ICON_EMPTY,
+    state_class=STATE_CLASS_MEASUREMENT
+).extend()
+
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
     cv.Required(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom),
     cv.Optional(CONF_TARGET_FLOW_TEMPERATURE): temperature_schema,
-    cv.Optional(CONF_OPERATION_MODE): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
+    cv.Optional(CONF_OPERATION_MODE): empty_schema,
     cv.Optional(CONF_OUTSIDE_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_DWT_OUTSIDE_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_FLOW_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_WATER_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_TARGET_WATER_TEMPERATURE): temperature_schema,
-    cv.Optional(CONF_ERROR_CODE): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_RPM): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
-    cv.Optional(CONF_BOILER_STATUS): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
+    cv.Optional(CONF_ERROR_CODE): empty_schema,
+    cv.Optional(CONF_RPM): empty_schema,
+    cv.Optional(CONF_BOILER_STATUS): empty_schema,
 }).extend({cv.GenerateID(): cv.declare_id(WolfScom)})
 
 def to_code(config):
