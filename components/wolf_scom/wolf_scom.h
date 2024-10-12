@@ -2,6 +2,9 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
+#include "esphome/components/sensor/sensor.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
+
 namespace esphome {
     namespace wolf_scom {
         class WolfScom : public uart::UARTDevice, public Component  {
