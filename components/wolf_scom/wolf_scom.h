@@ -6,8 +6,6 @@ namespace esphome {
     namespace wolf_scom {
         class WolfScom : public uart::UARTDevice, public Component  {
          public:
-          WolfScom(UARTComponent *parent) : UARTDevice(parent) {}
-
           void set_target_flow_temperature_sensor(sensor::Sensor *sensor) { target_flow_temperature_sensor = sensor; }
           void set_heating_day_sensor(sensor::Sensor *sensor) { heating_day_sensor = sensor; }
           void set_hot_water_day_sensor(sensor::Sensor *sensor) { hot_water_day_sensor = sensor; }
