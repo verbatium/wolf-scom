@@ -70,7 +70,7 @@ bool WolfScom::process_packet() {
             if (this->operation_mode_sensor != nullptr
             && this->last_operation_mode != value) {
                 this->operation_mode_sensor->publish_state(value);
-                this->last_operation_mode == value;
+                this->last_operation_mode = value;
             }
             break;
           case 0x71:
