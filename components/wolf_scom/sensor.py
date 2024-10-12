@@ -26,6 +26,7 @@ temperature_schema = sensor.sensor_schema(
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
+    cv.Required(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom),
     cv.Optional(CONF_TARGET_FLOW_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_OPERATION_MODE): sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1).extend(),
     cv.Optional(CONF_OUTSIDE_TEMPERATURE): temperature_schema,
