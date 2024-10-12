@@ -1,8 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
-
-from esphome.const import CONF_ID, UNIT_EMPTY, ICON_EMPTY
 from . import WolfScom, CONF_WOLF_SCOM_ID
 
 DEPENDENCIES = ['wolf_scom']

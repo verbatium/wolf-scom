@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor
-from esphome.const import CONF_ID, UNIT_EMPTY, ICON_EMPTY, STATE_CLASS_MEASUREMENT, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE
+from esphome.const import CONF_ID, UNIT_EMPTY, ICON_FAN, ICON_EMPTY,UNIT_REVOLUTIONS_PER_MINUTE, STATE_CLASS_MEASUREMENT, UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE
 from . import WolfScom, CONF_WOLF_SCOM_ID
 
 DEPENDENCIES = ['wolf_scom']
@@ -31,6 +31,13 @@ empty_schema = sensor.sensor_schema(
     state_class=STATE_CLASS_MEASUREMENT
 ).extend()
 
+rpm_schema = sensor.sensor_schema(
+    unit_of_measurement=UNIT_REVOLUTIONS_PER_MINUTE,
+    accuracy_decimals=1,
+    icon=ICON_FAN,
+    state_class=STATE_CLASS_MEASUREMENT
+).extend()
+
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(WolfScom),
     cv.Required(CONF_WOLF_SCOM_ID): cv.use_id(WolfScom),
@@ -42,15 +49,12 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_WATER_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_TARGET_WATER_TEMPERATURE): temperature_schema,
     cv.Optional(CONF_ERROR_CODE): empty_schema,
-    cv.Optional(CONF_RPM): empty_schema,
+    cv.Optional(CONF_RPM): rpm_schema,
     cv.Optional(CONF_BOILER_STATUS): empty_schema,
 }).extend({cv.GenerateID(): cv.declare_id(WolfScom)})
 
 def to_code(config):
     paren = yield cg.get_variable(config[CONF_WOLF_SCOM_ID])
-    # var = cg.new_Pvariable(config[CONF_ID])
-    # cg.add(paren.register_sensor(var))
-    # yield cg.register_component(var, config)
 
     if CONF_TARGET_FLOW_TEMPERATURE in config:
         conf = config[CONF_TARGET_FLOW_TEMPERATURE]
