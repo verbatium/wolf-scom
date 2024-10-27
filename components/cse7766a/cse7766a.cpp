@@ -161,20 +161,19 @@ void CSE7766aComponent::parse_data_() {
   float current = 0.0f;
   float calculated_current = 0.0f;
   if (have_current) {
-   if (0 == power) {
+    if (0 == power) {
       current = 0;
     } else {
-        // Assumption: if we don't have power measurement, then current is likely below 50mA
-        if (have_power && voltage > 1.0f) {
-          calculated_current = power / voltage;
-        }
-        // Datasheet: minimum measured current is 50mA
-        if (calculated_current > 0.05f) {
-          current = (float)current_coeff / float(current_cycle);
-        } else {
-            ESP_LOGD(TAG, "Current is very small:%.4f = %d / %d", calculated_current, current_coeff, current_cycle);
-            current = calculated_current;
-        }
+      // Assumption: if we don't have power measurement, then current is likely below 50mA
+      if (have_power && voltage > 1.0f) {
+        calculated_current = power / voltage;
+      }
+      // Datasheet: minimum measured current is 50mA
+      if (calculated_current > 0.05f) {
+        current = (float)current_coeff / float(current_cycle);
+      } else {
+        current = calculated_current;
+      }
     }
 
     if (this->current_sensor_ != nullptr) {
@@ -188,7 +187,7 @@ void CSE7766aComponent::parse_data_() {
       this->apparent_power_sensor_->publish_state(apparent_power);
     }
     if (have_power && this->reactive_power_sensor_ != nullptr) {
-      const float reactive_power = apparent_power - power;
+      const float reactive_power = sqrt(apparent_power * apparent_power - power * power);
       if (reactive_power < 0.0f) {
         ESP_LOGD(TAG, "Impossible reactive power: %.4f is negative", reactive_power);
         this->reactive_power_sensor_->publish_state(0.0f);
