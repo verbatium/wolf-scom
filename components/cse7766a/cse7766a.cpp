@@ -9,7 +9,7 @@ namespace cse7766a {
 
 static const char *const TAG = "cse7766a";
 
-void cse7766aComponent::loop() {
+void CSE7766aComponent::loop() {
   const uint32_t now = millis();
   if (now - this->last_transmission_ >= 500) {
     // last transmission too long ago. Reset RX index.
@@ -37,9 +37,9 @@ void cse7766aComponent::loop() {
     this->raw_data_index_ = (this->raw_data_index_ + 1) % 24;
   }
 }
-float cse7766aComponent::get_setup_priority() const { return setup_priority::DATA; }
+float CSE7766aComponent::get_setup_priority() const { return setup_priority::DATA; }
 
-bool cse7766aComponent::check_byte_() {
+bool CSE7766aComponent::check_byte_() {
   uint8_t index = this->raw_data_index_;
   uint8_t byte = this->raw_data_[index];
   if (index == 0) {
@@ -69,7 +69,7 @@ bool cse7766aComponent::check_byte_() {
 
   return true;
 }
-void cse7766aComponent::parse_data_() {
+void CSE7766aComponent::parse_data_() {
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
   {
     std::stringstream ss;
