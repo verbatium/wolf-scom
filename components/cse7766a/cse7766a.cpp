@@ -181,19 +181,20 @@ void CSE7766aComponent::parse_data_() {
     }
   }
 
-  if (have_voltage && have_current) {
-    const float apparent_power = voltage * current;
+  if (have_voltage && have_power) {
+    float apparent_power = power;
+    if (have_current && current > 0) {
+      apparent_power = voltage * current;
+    }
     if (this->apparent_power_sensor_ != nullptr) {
       this->apparent_power_sensor_->publish_state(apparent_power);
     }
-    if (have_power && this->reactive_power_sensor_ != nullptr) {
-      const float reactive_power = sqrt(apparent_power * apparent_power - power * power);
-      if (reactive_power < 0.0f) {
-        ESP_LOGD(TAG, "Impossible reactive power: %.4f is negative", reactive_power);
-        this->reactive_power_sensor_->publish_state(0.0f);
-      } else {
-        this->reactive_power_sensor_->publish_state(reactive_power);
+    if (this->reactive_power_sensor_ != nullptr) {
+      float reactive_power = 0.0f;
+      if (current > 0) {
+         reactive_power = sqrt(apparent_power * apparent_power - power * power);
       }
+      this->reactive_power_sensor_->publish_state(reactive_power);
     }
     if (this->power_factor_sensor_ != nullptr && (have_power || power_cycle_exceeds_range)) {
       float pf = NAN;
