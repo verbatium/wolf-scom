@@ -1,15 +1,15 @@
-#include "cse7766aa.h"
+#include "cse7766a.h"
 #include "esphome/core/log.h"
 #include <cinttypes>
 #include <iomanip>
 #include <sstream>
 
 namespace esphome {
-namespace cse7766aa {
+namespace cse7766a {
 
-static const char *const TAG = "cse7766aa";
+static const char *const TAG = "cse7766a";
 
-void CSE7766aaComponent::loop() {
+void cse7766aComponent::loop() {
   const uint32_t now = millis();
   if (now - this->last_transmission_ >= 500) {
     // last transmission too long ago. Reset RX index.
@@ -37,9 +37,9 @@ void CSE7766aaComponent::loop() {
     this->raw_data_index_ = (this->raw_data_index_ + 1) % 24;
   }
 }
-float CSE7766aaComponent::get_setup_priority() const { return setup_priority::DATA; }
+float cse7766aComponent::get_setup_priority() const { return setup_priority::DATA; }
 
-bool CSE7766aaComponent::check_byte_() {
+bool cse7766aComponent::check_byte_() {
   uint8_t index = this->raw_data_index_;
   uint8_t byte = this->raw_data_[index];
   if (index == 0) {
@@ -61,7 +61,7 @@ bool CSE7766aaComponent::check_byte_() {
     }
 
     if (checksum != this->raw_data_[23]) {
-      ESP_LOGW(TAG, "Invalid checksum from CSE7766aa: 0x%02X != 0x%02X", checksum, this->raw_data_[23]);
+      ESP_LOGW(TAG, "Invalid checksum from cse7766a: 0x%02X != 0x%02X", checksum, this->raw_data_[23]);
       return false;
     }
     return true;
@@ -69,7 +69,7 @@ bool CSE7766aaComponent::check_byte_() {
 
   return true;
 }
-void CSE7766aaComponent::parse_data_() {
+void cse7766aComponent::parse_data_() {
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
   {
     std::stringstream ss;
@@ -85,14 +85,14 @@ void CSE7766aaComponent::parse_data_() {
   uint8_t header1 = this->raw_data_[0];
 
   if (header1 == 0xAA) {
-    ESP_LOGE(TAG, "CSE7766aa not calibrated!");
+    ESP_LOGE(TAG, "cse7766a not calibrated!");
     return;
   }
 
   bool power_cycle_exceeds_range = false;
   if ((header1 & 0xF0) == 0xF0) {
     if (header1 & 0xD) {
-      ESP_LOGE(TAG, "CSE7766aa reports abnormal external circuit or chip damage: (0x%02X)", header1);
+      ESP_LOGE(TAG, "cse7766a reports abnormal external circuit or chip damage: (0x%02X)", header1);
       if (header1 & (1 << 3)) {
         ESP_LOGE(TAG, "  Voltage cycle exceeds range.");
       }
@@ -201,7 +201,7 @@ void CSE7766aaComponent::parse_data_() {
         pf = 1.0f;
       } else if (current == 0 && calculated_current <= 0.05f) {
         // Datasheet: minimum measured current is 50mA
-        ESP_LOGV(TAG, "Can't calculate power factor (current below minimum for CSE7766aa)");
+        ESP_LOGV(TAG, "Can't calculate power factor (current below minimum for cse7766a)");
       } else {
         ESP_LOGW(TAG, "Can't calculate power factor from P = %.4f W, S = %.4f VA", power, apparent_power);
       }
