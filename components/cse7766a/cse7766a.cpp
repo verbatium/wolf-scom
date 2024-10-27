@@ -161,17 +161,24 @@ void CSE7766aComponent::parse_data_() {
   float current = 0.0f;
   float calculated_current = 0.0f;
   if (have_current) {
+   if (0 == energy_active_power) {
+      current = 0;
+    } else {
+      current = (float)current_coeff / (float)current_cycle;
+    }
+
     // Assumption: if we don't have power measurement, then current is likely below 50mA
     if (have_power && voltage > 1.0f) {
       calculated_current = power / voltage;
+      ESP_LOGD(TAG, "Currengt is very small:%.4f = %d / %d", calculated_current, current_coeff, current_cycle);
     }
     // Datasheet: minimum measured current is 50mA
-    if (calculated_current > 0.05f) {
-      current = current_coeff / float(current_cycle);
-    } else {
-        ESP_LOGD(TAG, "Currengt is very small: %d / %d", current_coeff, current_cycle);
-        current = calculated_current;
-    }
+//    if (calculated_current > 0.05f) {
+//      current = current_coeff / float(current_cycle);
+//    } else {
+//        ESP_LOGD(TAG, "Currengt is very small: %d / %d", current_coeff, current_cycle);
+//        current = calculated_current;
+//    }
     if (this->current_sensor_ != nullptr) {
       this->current_sensor_->publish_state(current);
     }
