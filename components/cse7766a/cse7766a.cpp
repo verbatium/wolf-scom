@@ -170,7 +170,7 @@ void CSE7766aComponent::parse_data_() {
       current = current_coeff / float(current_cycle);
     } else {
         ESP_LOGD(TAG, "Currengt is very small: %d / %d", current_coeff, current_cycle);
-        current = calculated_current
+        current = calculated_current;
     }
     if (this->current_sensor_ != nullptr) {
       this->current_sensor_->publish_state(current);
