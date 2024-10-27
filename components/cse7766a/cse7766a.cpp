@@ -161,7 +161,7 @@ void CSE7766aComponent::parse_data_() {
   float current = 0.0f;
   float calculated_current = 0.0f;
   if (have_current) {
-   if (0 == energy_active_power) {
+   if (0 == power) {
       current = 0;
     } else {
       current = (float)current_coeff / (float)current_cycle;
