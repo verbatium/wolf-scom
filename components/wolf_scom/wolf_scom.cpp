@@ -99,7 +99,8 @@ bool WolfScom::process_packet() {
           case 0x6C:
             if (this->outside_temperature_sensor != nullptr
             && this->last_outside_temperature != value) {
-                this->outside_temperature_sensor->publish_state(value);
+                int8_t signed_value = static_cast<int8_t>(value); // Convert to signed
+                this->outside_temperature_sensor->publish_state(signed_value);
                 this->last_outside_temperature = value;
             }
             break;
