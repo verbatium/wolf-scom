@@ -34,8 +34,8 @@ namespace esphome {
           void dump_config() override;
          private:
              uint8_t last_target_flow_temperature = -1;  
-             uint8_t last_outside_temperature = -1;  
-             uint8_t last_dwt_outside_temperature = -1;  
+             int8_t last_outside_temperature = -128;
+             int8_t last_dwt_outside_temperature = -128;
              uint8_t last_flow_temperature = -1;  
              uint8_t last_water_temperature = -1;  
              uint8_t last_target_water_temperature = -1;  
