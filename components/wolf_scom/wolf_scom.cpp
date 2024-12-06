@@ -76,7 +76,7 @@ bool WolfScom::process_packet() {
           case 0x71:
             if (this->dwt_outside_temperature_sensor != nullptr
             && this->last_dwt_outside_temperature != value) {
-            int8_t signed_value = static_cast<int8_t>(value); // Convert to signed
+            char signed_value = (char)(value); // Convert to signed
             this->dwt_outside_temperature_sensor->publish_state(signed_value);
             this->last_dwt_outside_temperature = value;
             }
@@ -99,7 +99,7 @@ bool WolfScom::process_packet() {
           case 0x6C:
             if (this->outside_temperature_sensor != nullptr
             && this->last_outside_temperature != value) {
-                int8_t signed_value = static_cast<int8_t>(value); // Convert to signed
+                char signed_value = (char)(value); // Convert to signed
                 this->outside_temperature_sensor->publish_state(signed_value);
                 this->last_outside_temperature = value;
             }
