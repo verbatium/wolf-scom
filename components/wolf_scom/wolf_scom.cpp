@@ -74,11 +74,10 @@ bool WolfScom::process_packet() {
             }
             break;
           case 0x71:
-            int8_t signed_value = static_cast<int8_t>(value);
             if (this->dwt_outside_temperature_sensor != nullptr
-            && this->last_dwt_outside_temperature != signed_value) {
-            this->dwt_outside_temperature_sensor->publish_state(signed_value);
-            this->last_dwt_outside_temperature = signed_value;
+            && this->last_dwt_outside_temperature != value) {
+            this->dwt_outside_temperature_sensor->publish_state(static_cast<int8_t>(value));
+            this->last_dwt_outside_temperature = value;
             }
             break;
           default:
@@ -97,11 +96,10 @@ bool WolfScom::process_packet() {
       if (command == buffer[3] && command == buffer[4] && buffer[7] == 0x06) {
         switch (command) {
           case 0x6C:
-            int8_t signed_value = static_cast<int8_t>(value);
             if (this->outside_temperature_sensor != nullptr
-            && this->last_outside_temperature != signed_value) {
-                this->outside_temperature_sensor->publish_state(signed_value);
-                this->last_outside_temperature = signed_value;
+            && this->last_outside_temperature != value) {
+                this->outside_temperature_sensor->publish_state(static_cast<int8_t>(value));
+                this->last_outside_temperature = value;
             }
             break;
           case 0x68:
