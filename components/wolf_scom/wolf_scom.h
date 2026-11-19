@@ -60,6 +60,7 @@ namespace esphome {
           scom::StreamParser parser_;
           scom::Publisher publisher_;
 
+          void feed_passive(uint8_t byte);
           void forward(const scom::Publication &publication);
 
           sensor::Sensor *target_flow_temperature_sensor = nullptr;

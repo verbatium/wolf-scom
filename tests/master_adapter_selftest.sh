@@ -23,5 +23,11 @@ check "B26 Master is created only when the master flag is set" "grep -Eq 'if \\(
 check "B26 UartPort is the BytePort adapter" "grep -Eq 'struct UartPort|class UartPort' $hdr $cpp && grep -Eq 'UartPort *: *(public )?scom::BytePort' $hdr $cpp"
 check "B26 exactly one UART write call site" "[ \"\$(cat $cpp $hdr | grep -Ec 'write_byte|write_array|write_str')\" = 1 ]"
 
+# B27: with master true the adapter feeds every RX byte and millis() into the Master and ticks it every loop();
+# the passive StreamParser is fed only when no Master is active.
+check "B27 RX bytes go to Master::on_rx with millis()" "grep -Eq 'master_core_->on_rx\\([a-z_]+, *millis\\(\\)\\)' $cpp"
+check "B27 loop ticks the Master with millis()" "grep -Eq 'master_core_->tick\\(millis\\(\\)\\)' $cpp"
+check "B27 the passive parser is fed from exactly one place" "[ \"\$(grep -c 'parser_.push' $cpp)\" = 1 ]"
+
 [ "$bad" -eq 0 ] && echo "SELFTEST OK"
 exit "$bad"

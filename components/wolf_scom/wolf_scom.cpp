@@ -32,14 +32,23 @@ void WolfScom::on_refused() {}
 void WolfScom::loop() {
     while (available()) {
       uint8_t byte = read();
-      auto frame = parser_.push(byte);
-      if (!frame) continue;
-      if (!scom::Publisher::is_known_command(*frame)) {
-        ESP_LOGW("uart_protocol_sensor", "Unknown command: 0x%02X", frame->cmd);
+      if (master_core_) {
+        master_core_->on_rx(byte, millis());
+      } else {
+        feed_passive(byte);
       }
-      for (const scom::Publication &publication : publisher_.on_frame(*frame)) {
-        forward(publication);
-      }
+    }
+    if (master_core_) master_core_->tick(millis());
+}
+
+void WolfScom::feed_passive(uint8_t byte) {
+    auto frame = parser_.push(byte);
+    if (!frame) return;
+    if (!scom::Publisher::is_known_command(*frame)) {
+      ESP_LOGW("uart_protocol_sensor", "Unknown command: 0x%02X", frame->cmd);
+    }
+    for (const scom::Publication &publication : publisher_.on_frame(*frame)) {
+      forward(publication);
     }
 }
 
