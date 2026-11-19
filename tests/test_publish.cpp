@@ -1,5 +1,7 @@
+#include <cstddef>
 #include <vector>
 
+#include "capture_frames.h"
 #include "mini_test.h"
 #include "scom_frame.h"
 #include "scom_publish.h"
@@ -140,4 +142,321 @@ TEST(publisher_publishes_binary_day_flags_as_zero_or_one) {
       {Kind::Write, 0x74, 0x05, Sensor::HotWaterDay, 1.0f},
   };
   check_rows(rows, sizeof(rows) / sizeof(rows[0]));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Characterization oracle: the pre-extraction WolfScom::loop/process_packet logic, copied verbatim
+// from the code at commit 0d7cc28 (components/wolf_scom/wolf_scom.cpp/.h). Only the ESPHome sensor
+// objects are replaced by recording stubs (publish_state records instead of publishing).
+// ---------------------------------------------------------------------------------------------
+#define ESP_LOGW(...) \
+  do {                \
+  } while (0)
+
+namespace oracle {
+using Seq = std::vector<Publication>;
+
+struct RecSensor {
+  Seq *seq;
+  Sensor id;
+  void publish_state(float v) { seq->push_back(Publication{id, v}); }
+};
+struct RecBinarySensor {
+  Seq *seq;
+  Sensor id;
+  void publish_state(bool v) { seq->push_back(Publication{id, v ? 1.0f : 0.0f}); }
+};
+
+class OldWolfScom {
+ public:
+  explicit OldWolfScom(Seq *seq)
+      : target_flow_temperature_sensor_{seq, Sensor::TargetFlowTemperature},
+        heating_day_sensor_{seq, Sensor::HeatingDay},
+        hot_water_day_sensor_{seq, Sensor::HotWaterDay},
+        operation_mode_sensor_{seq, Sensor::OperationMode},
+        outside_temperature_sensor_{seq, Sensor::OutsideTemperature},
+        dwt_outside_temperature_sensor_{seq, Sensor::DwtOutsideTemperature},
+        flow_temperature_sensor_{seq, Sensor::FlowTemperature},
+        water_temperature_sensor_{seq, Sensor::WaterTemperature},
+        target_water_temperature_sensor_{seq, Sensor::TargetWaterTemperature},
+        error_code_sensor_{seq, Sensor::ErrorCode},
+        rpm_sensor_{seq, Sensor::Rpm},
+        boiler_status_sensor_{seq, Sensor::BoilerStatus},
+        pump_sensor_{seq, Sensor::Pump},
+        heat_sensor_{seq, Sensor::Heat},
+        three_way_valve_sensor_{seq, Sensor::ThreeWayValve} {
+    target_flow_temperature_sensor = &target_flow_temperature_sensor_;
+    heating_day_sensor = &heating_day_sensor_;
+    hot_water_day_sensor = &hot_water_day_sensor_;
+    operation_mode_sensor = &operation_mode_sensor_;
+    outside_temperature_sensor = &outside_temperature_sensor_;
+    dwt_outside_temperature_sensor = &dwt_outside_temperature_sensor_;
+    flow_temperature_sensor = &flow_temperature_sensor_;
+    water_temperature_sensor = &water_temperature_sensor_;
+    target_water_temperature_sensor = &target_water_temperature_sensor_;
+    error_code_sensor = &error_code_sensor_;
+    rpm_sensor = &rpm_sensor_;
+    boiler_status_sensor = &boiler_status_sensor_;
+    pump_sensor = &pump_sensor_;
+    heat_sensor = &heat_sensor_;
+    three_way_valve_sensor = &three_way_valve_sensor_;
+  }
+
+  // old WolfScom::loop body for one received byte
+  void feed(uint8_t byte) {
+    buffer_.push_back(byte);
+    if (buffer_.size() >= 8) {
+      if (process_packet()) {
+        buffer_.erase(buffer_.begin(), buffer_.begin() + 8);
+      } else {
+        buffer_.erase(buffer_.begin());
+      }
+    }
+  }
+
+ private:
+  uint8_t last_target_flow_temperature = -1;
+  int8_t last_outside_temperature = -128;
+  int8_t last_dwt_outside_temperature = -128;
+  uint8_t last_flow_temperature = -1;
+  uint8_t last_water_temperature = -1;
+  uint8_t last_target_water_temperature = -1;
+  uint8_t last_error_code = -1;
+  uint8_t last_rpm = -1;
+  uint8_t last_boiler_status = -1;
+  uint8_t last_operation_mode = -1;
+  uint8_t last_heating_day = -1;
+  uint8_t last_hot_water_day = -1;
+  uint8_t last_pump = -1;
+  uint8_t last_three_way_valve = -1;
+  uint8_t last_heat = -1;
+
+  std::vector<uint8_t> buffer_;
+
+  RecSensor target_flow_temperature_sensor_;
+  RecBinarySensor heating_day_sensor_;
+  RecBinarySensor hot_water_day_sensor_;
+  RecSensor operation_mode_sensor_;
+  RecSensor outside_temperature_sensor_;
+  RecSensor dwt_outside_temperature_sensor_;
+  RecSensor flow_temperature_sensor_;
+  RecSensor water_temperature_sensor_;
+  RecSensor target_water_temperature_sensor_;
+  RecSensor error_code_sensor_;
+  RecSensor rpm_sensor_;
+  RecSensor boiler_status_sensor_;
+  RecBinarySensor pump_sensor_;
+  RecBinarySensor heat_sensor_;
+  RecBinarySensor three_way_valve_sensor_;
+
+  RecSensor *target_flow_temperature_sensor = nullptr;
+  RecBinarySensor *heating_day_sensor = nullptr;
+  RecBinarySensor *hot_water_day_sensor = nullptr;
+  RecSensor *operation_mode_sensor = nullptr;
+  RecSensor *outside_temperature_sensor = nullptr;
+  RecSensor *dwt_outside_temperature_sensor = nullptr;
+  RecSensor *flow_temperature_sensor = nullptr;
+  RecSensor *water_temperature_sensor = nullptr;
+  RecSensor *target_water_temperature_sensor = nullptr;
+  RecSensor *error_code_sensor = nullptr;
+  RecSensor *rpm_sensor = nullptr;
+  RecSensor *boiler_status_sensor = nullptr;
+  RecBinarySensor *pump_sensor = nullptr;
+  RecBinarySensor *heat_sensor = nullptr;
+  RecBinarySensor *three_way_valve_sensor = nullptr;
+
+  bool process_packet() {
+    if (buffer_.size() < 8) {
+      return false;
+    }
+
+    uint8_t *buffer = buffer_.data();
+    if (buffer[0] == 0x53 && buffer[1] == 0x53) {
+      uint8_t command = buffer[2];
+      uint8_t value = buffer[4];
+
+      if (command == buffer[3] && value == buffer[5] && buffer[6] == 0x06 && value == buffer[7]) {
+        switch (command) {
+          case 0x6E:
+            if (this->target_flow_temperature_sensor != nullptr && this->last_target_flow_temperature != value) {
+              this->target_flow_temperature_sensor->publish_state(value);
+              this->last_target_flow_temperature = value;
+            }
+            break;
+          case 0x72:
+            if (this->heating_day_sensor != nullptr && this->last_heating_day != value) {
+              this->heating_day_sensor->publish_state(value);
+              this->last_heating_day = value;
+            }
+            break;
+          case 0x74:
+            if (this->hot_water_day_sensor != nullptr && this->last_hot_water_day != value) {
+              this->hot_water_day_sensor->publish_state(value);
+              this->last_hot_water_day = value;
+            }
+            break;
+          case 0x67:
+            if (this->operation_mode_sensor != nullptr && this->last_operation_mode != value) {
+              this->operation_mode_sensor->publish_state(value);
+              this->last_operation_mode = value;
+            }
+            break;
+          case 0x71:
+            if (this->dwt_outside_temperature_sensor != nullptr && this->last_dwt_outside_temperature != value) {
+              this->dwt_outside_temperature_sensor->publish_state(static_cast<int8_t>(value));
+              this->last_dwt_outside_temperature = value;
+            }
+            break;
+          default:
+            ESP_LOGW("uart_protocol_sensor", "Unknown command: 0x%02X", command);
+            break;
+        }
+        return true;
+      }
+    } else if (buffer[0] == 0x44 && buffer[1] == 0x44) {
+      uint8_t command = buffer[2];
+      uint8_t value = buffer[5];
+
+      if (command == buffer[3] && command == buffer[4] && buffer[7] == 0x06) {
+        switch (command) {
+          case 0x6C:
+            if (this->outside_temperature_sensor != nullptr && this->last_outside_temperature != value) {
+              this->outside_temperature_sensor->publish_state(static_cast<int8_t>(value));
+              this->last_outside_temperature = value;
+            }
+            break;
+          case 0x68:
+            if (this->flow_temperature_sensor != nullptr && this->last_flow_temperature != value) {
+              this->flow_temperature_sensor->publish_state(value);
+              this->last_flow_temperature = value;
+            }
+            break;
+          case 0x6A:
+            if (this->water_temperature_sensor != nullptr && this->last_water_temperature != value) {
+              this->water_temperature_sensor->publish_state(value);
+              this->last_water_temperature = value;
+            }
+            break;
+          case 0x6F:
+            if (this->target_water_temperature_sensor != nullptr && this->last_target_water_temperature != value) {
+              this->target_water_temperature_sensor->publish_state(value);
+              this->last_target_water_temperature = value;
+            }
+            break;
+          case 0x65:
+            if (this->error_code_sensor != nullptr && this->last_error_code != value) {
+              this->error_code_sensor->publish_state(value);
+              this->last_error_code = value;
+            }
+            break;
+          case 0xA0:
+            if (this->rpm_sensor != nullptr && this->last_rpm != value) {
+              this->rpm_sensor->publish_state(value);
+              this->last_rpm = value;
+            }
+            break;
+          case 0x70:
+            if (this->boiler_status_sensor != nullptr && this->last_boiler_status != value) {
+              this->boiler_status_sensor->publish_state(value);
+              this->last_boiler_status = value;
+            }
+            if (this->pump_sensor != nullptr && (this->last_pump != (value & (1 << 2)))) {
+              this->pump_sensor->publish_state((value >> 2) & 1);
+              this->last_pump = value & (1 << 2);
+            }
+            if (this->heat_sensor != nullptr && this->last_heat != (value & (1 << 0))) {
+              this->heat_sensor->publish_state(value & 1);
+              this->last_heat = value & (1 << 0);
+            }
+            if (this->three_way_valve_sensor != nullptr && this->last_three_way_valve != (value & (1 << 1))) {
+              this->three_way_valve_sensor->publish_state((value >> 1) & 1);
+              this->last_three_way_valve = value & (1 << 1);
+            }
+            break;
+          default:
+            ESP_LOGW("uart_protocol_sensor", "Unknown command: 0x%02X", command);
+            break;
+        }
+        return true;
+      }
+    }
+
+    return false;
+  }
+};
+
+Seq run_old(const uint8_t *bytes, size_t n) {
+  Seq seq;
+  OldWolfScom old(&seq);
+  for (size_t i = 0; i < n; ++i) old.feed(bytes[i]);
+  return seq;
+}
+}  // namespace oracle
+
+namespace {
+oracle::Seq run_new(const uint8_t *bytes, size_t n) {
+  oracle::Seq seq;
+  scom::StreamParser parser;
+  scom::Publisher publisher;
+  for (size_t i = 0; i < n; ++i) {
+    if (auto frame = parser.push(bytes[i])) {
+      for (const Publication &p : publisher.on_frame(*frame)) seq.push_back(p);
+    }
+  }
+  return seq;
+}
+
+// Returns the index of the first difference, or -1 when the two sequences are identical.
+long first_difference(const oracle::Seq &a, const oracle::Seq &b) {
+  size_t n = a.size() < b.size() ? a.size() : b.size();
+  for (size_t i = 0; i < n; ++i) {
+    if (a[i].sensor != b[i].sensor || a[i].value != b[i].value) return static_cast<long>(i);
+  }
+  return a.size() == b.size() ? -1 : static_cast<long>(n);
+}
+}  // namespace
+
+TEST(characterization_capture_replay_matches_old_process_packet) {
+  oracle::Seq old_seq = oracle::run_old(capture::kCaptureBytes, capture::kCaptureLength);
+  oracle::Seq new_seq = run_new(capture::kCaptureBytes, capture::kCaptureLength);
+  // guard against two empty sequences agreeing: the capture does produce publications (first cycle alone: 14)
+  CHECK(old_seq.size() >= 14);
+  CHECK_EQ(old_seq.size(), new_seq.size());
+  CHECK_EQ(-1, first_difference(old_seq, new_seq));
+}
+
+namespace {
+void append_read(std::vector<uint8_t> &s, uint8_t cmd, uint8_t v) {
+  const uint8_t f[8] = {0x44, 0x44, cmd, cmd, cmd, v, v, 0x06};
+  s.insert(s.end(), f, f + 8);
+}
+void append_write(std::vector<uint8_t> &s, uint8_t cmd, uint8_t v) {
+  const uint8_t f[8] = {0x53, 0x53, cmd, cmd, v, v, 0x06, v};
+  s.insert(s.end(), f, f + 8);
+}
+}  // namespace
+
+TEST(characterization_synthetic_stream_with_value_changes_junk_and_unknown_codes_matches_old) {
+  // The capture only ever shows status 0x0C and constant values; this stream exercises every mapping,
+  // every status bit, repeated and changed values, stray bytes and an unknown code (all synthetic).
+  std::vector<uint8_t> s;
+  const uint8_t statuses[] = {0x0C, 0x0D, 0x0D, 0x0E, 0x0F, 0x08, 0x0C, 0x0C, 0x0A, 0x01, 0x02, 0x04};
+  for (uint8_t st : statuses) {
+    append_read(s, 0x70, st);
+    s.push_back(0x00);  // stray byte between frames
+  }
+  const uint8_t values[] = {0x10, 0x10, 0x11, 0x00, 0x00, 0x7F, 0x01, 0x02};
+  const uint8_t read_cmds[] = {0x68, 0x6A, 0x6F, 0x65, 0xA0, 0x6C};
+  const uint8_t write_cmds[] = {0x6E, 0x72, 0x74, 0x67, 0x71};
+  for (uint8_t v : values) {
+    for (uint8_t c : read_cmds) append_read(s, c, v);
+    for (uint8_t c : write_cmds) append_write(s, c, v);
+    append_read(s, 0x99, v);   // unknown read code
+    append_write(s, 0x99, v);  // unknown write code
+  }
+  oracle::Seq old_seq = oracle::run_old(s.data(), s.size());
+  oracle::Seq new_seq = run_new(s.data(), s.size());
+  CHECK(old_seq.size() >= 60);
+  CHECK_EQ(old_seq.size(), new_seq.size());
+  CHECK_EQ(-1, first_difference(old_seq, new_seq));
 }
