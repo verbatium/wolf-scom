@@ -110,3 +110,20 @@ TEST(stream_parser_resyncs_after_stray_junk_byte) {
   CHECK_EQ(0x68, frames[0].cmd);
   CHECK_EQ(0x1F, frames[0].value);
 }
+
+TEST(stream_parser_consumes_all_eight_bytes_of_unknown_command_frame) {
+  // synthetic. Unknown frame A = 44 44 99 99 99 44 44 06 whose tail "44 44 06" plus the following
+  // bytes "06 06 00 00 06" would form a second, overlapping valid read frame (cmd 06).
+  // A parser that kept A's bytes after accepting it (slide-by-one) would report that phantom frame.
+  const uint8_t stream[] = {0x44, 0x44, 0x99, 0x99, 0x99, 0x44, 0x44, 0x06, 0x06, 0x06, 0x00, 0x00, 0x06};
+  scom::StreamParser parser;
+  std::vector<scom::Frame> frames;
+  for (uint8_t b : stream) if (auto f = parser.push(b)) frames.push_back(*f);
+  CHECK_EQ(1, frames.size());
+  if (frames.empty()) return;
+  CHECK_EQ(0x99, frames[0].cmd);
+  CHECK_EQ(0x44, frames[0].value);
+  // and the next captured frame is still found right after
+  for (uint8_t b : capture::kRead68) if (auto f = parser.push(b)) frames.push_back(*f);
+  CHECK_EQ(2, frames.size());
+}
