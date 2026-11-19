@@ -50,3 +50,16 @@ TEST(b20_master_emits_nothing_during_the_listen_window) {
   CHECK_EQ(0, (int) port.written.size());
   CHECK_EQ(0, l.refused);
 }
+
+// B21: any RX byte inside the listen window means a foreign master (DWT) is on the bus
+TEST(b21_rx_byte_in_listen_window_refuses_start_and_never_transmits) {
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  m.tick(1000);
+  m.on_rx(0x44, 3000);
+  for (uint32_t now = 3000; now < 30000; now += 10) m.tick(now);
+  CHECK_EQ(0, (int) port.written.size());
+  CHECK_EQ(1, l.refused);
+  CHECK_EQ(0, (int) l.frames.size());
+}

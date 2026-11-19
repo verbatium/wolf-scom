@@ -11,6 +11,7 @@ Master::Master(BytePort &port, Listener &listener, Config config)
     : port_(port), listener_(listener), config_(config) {}
 
 void Master::tick(uint32_t now_ms) {
+  if (refused_) return;
   if (!first_tick_ms_) first_tick_ms_ = now_ms;
   if (!started_) {
     if (now_ms - *first_tick_ms_ >= GuardListenMs) start_transaction(now_ms);
@@ -22,9 +23,16 @@ void Master::tick(uint32_t now_ms) {
 }
 
 void Master::on_rx(uint8_t byte, uint32_t now_ms) {
+  if (!started_) return refuse();
   if (!transaction_) return;
   transaction_->on_rx(byte, now_ms);
   deliver_if_ended();
+}
+
+void Master::refuse() {
+  if (refused_) return;
+  refused_ = true;
+  listener_.on_refused();
 }
 
 void Master::start_transaction(uint32_t now_ms) {

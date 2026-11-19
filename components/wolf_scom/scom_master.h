@@ -28,6 +28,7 @@ class Master {
   void tick(uint32_t now_ms);
 
  private:
+  void refuse();
   void start_transaction(uint32_t now_ms);
   void deliver_if_ended();
 
@@ -35,6 +36,7 @@ class Master {
   Listener &listener_;
   Config config_;
   bool started_ = false;
+  bool refused_ = false;
   std::optional<uint32_t> first_tick_ms_;
   std::optional<Transaction> transaction_;
 };
