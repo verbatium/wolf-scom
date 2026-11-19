@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <vector>
 
 #include "scom_frame.h"
@@ -15,6 +16,9 @@ struct Publication {
 class Publisher {
  public:
   std::vector<Publication> on_frame(const Frame &frame);
+
+ private:
+  std::optional<uint8_t> last_flow_temperature_;
 };
 
 }  // namespace scom

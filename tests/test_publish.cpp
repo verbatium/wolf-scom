@@ -20,3 +20,14 @@ TEST(publisher_maps_flow_temperature_frame_to_sensor_publication) {
   if (out.size() != 1) return;
   CHECK(is(out[0], Sensor::FlowTemperature, 31.0f));
 }
+
+TEST(publisher_dedupes_unchanged_value_and_republishes_on_change) {
+  scom::Publisher publisher;
+  CHECK_EQ(1, publisher.on_frame(Frame{Kind::Read, 0x68, 0x1F}).size());
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x68, 0x1F}).size());
+  std::vector<Publication> changed = publisher.on_frame(Frame{Kind::Read, 0x68, 0x20});
+  CHECK_EQ(1, changed.size());
+  if (changed.size() != 1) return;
+  CHECK(is(changed[0], Sensor::FlowTemperature, 32.0f));
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x68, 0x20}).size());
+}
