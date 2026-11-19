@@ -16,3 +16,13 @@ TEST(b11_read_begin_sends_first_byte_0x44) {
   CHECK_EQ(1, (int) port.written.size());
   if (!port.written.empty()) CHECK_EQ(capture::kRead68[0], port.written[0]);
 }
+
+// B12
+TEST(b12_after_echo_of_0x44_sends_command_byte) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  t.on_rx(capture::kRead68[1], 1010);  // boiler echo of 0x44
+  CHECK_EQ(2, (int) port.written.size());
+  if (port.written.size() >= 2) CHECK_EQ(capture::kRead68[2], port.written[1]);
+}

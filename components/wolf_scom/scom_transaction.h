@@ -15,9 +15,11 @@ class Transaction {
  public:
   Transaction(BytePort &port, Kind kind, uint8_t cmd);
   void begin(uint32_t now_ms);
+  void on_rx(uint8_t byte, uint32_t now_ms);
 
  private:
   BytePort &port_;
+  uint8_t cmd_;
 };
 
 }  // namespace scom
