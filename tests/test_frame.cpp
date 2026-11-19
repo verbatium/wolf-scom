@@ -37,3 +37,15 @@ TEST(decode_rejects_read_frame_whose_ack_is_not_06) {
   read[7] = 0x00;
   CHECK(!scom::decode(read).has_value());
 }
+
+TEST(decode_is_lenient_on_read_value_echo_like_old_process_packet) {
+  // synthetic: byte6 (value echo) != byte5; old code never looked at byte6, value is byte5
+  auto read = capture::kRead68;
+  read[6] = 0x77;
+  auto f = scom::decode(read);
+  CHECK(f.has_value());
+  if (!f) return;
+  CHECK(f->kind == scom::Kind::Read);
+  CHECK_EQ(0x68, f->cmd);
+  CHECK_EQ(0x1F, f->value);
+}
