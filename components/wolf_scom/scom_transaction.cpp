@@ -29,6 +29,8 @@ Transaction::Transaction(BytePort &port, Kind kind, uint8_t cmd) : port_(port), 
 void Transaction::begin(uint32_t) { advance(); }
 
 void Transaction::on_rx(uint8_t byte, uint32_t) {
+  if (state_ != State::Running) return;
+  if (!echoes_expected(byte)) return fail(FailReason::WrongEcho);
   if (ReadSteps[step_].byte == Byte::Value) value_ = byte;
   ++step_;
   if (step_ == ReadStepCount) {
@@ -37,6 +39,19 @@ void Transaction::on_rx(uint8_t byte, uint32_t) {
     return;
   }
   advance();
+}
+
+bool Transaction::echoes_expected(uint8_t byte) const {
+  switch (ReadSteps[step_].byte) {
+    case Byte::Header: return byte == ReadHeader;
+    case Byte::Cmd: return byte == cmd_;
+    default: return true;
+  }
+}
+
+void Transaction::fail(FailReason reason) {
+  state_ = State::Failed;
+  fail_reason_ = reason;
 }
 
 void Transaction::advance() {

@@ -74,3 +74,45 @@ TEST(b14a_no_loopback_captured_read_completes_done_with_value) {
     CHECK_EQ(img[4], port.written[2]);
   }
 }
+
+// B15
+TEST(b15_wrong_echo_byte_aborts_with_wrong_echo) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  t.on_rx(0x44, 1010);
+  t.on_rx(0x69, 1020);  // echo of the command byte is wrong
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::WrongEcho);
+  CHECK(!t.frame().has_value());
+  size_t sent = port.written.size();
+  t.on_rx(0x68, 1030);  // a terminal transaction ignores late bytes and transmits nothing
+  t.on_rx(0x1F, 1040);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK_EQ((int) sent, (int) port.written.size());
+}
+
+TEST(b15_wrong_first_echo_aborts_before_command_is_sent) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  t.on_rx(0x45, 1010);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::WrongEcho);
+  CHECK_EQ(1, (int) port.written.size());
+}
+
+// A finished transaction must not walk off the end of its step table (found reading B14a implementation).
+TEST(done_transaction_ignores_late_rx_bytes) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  for (int i : {1, 3, 5, 6, 7}) t.on_rx(img[i], 1010 + i);
+  CHECK(t.state() == scom::Transaction::State::Done);
+  t.on_rx(0x00, 1100);
+  t.on_rx(0x99, 1110);
+  CHECK(t.state() == scom::Transaction::State::Done);
+  CHECK_EQ(0x1F, t.frame()->value);
+  CHECK_EQ(3, (int) port.written.size());
+}
