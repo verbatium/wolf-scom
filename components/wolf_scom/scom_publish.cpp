@@ -48,6 +48,13 @@ float published_value(Sensor sensor, uint8_t raw) {
   }
 }
 
+// Parity with the legacy int8 cache compared against a uint8 value: a negative outside
+// temperature never equals its cache, so it was republished on every frame.
+bool republishes_every_frame(Sensor sensor, uint8_t raw) {
+  bool signed_sensor = sensor == Sensor::OutsideTemperature || sensor == Sensor::DwtOutsideTemperature;
+  return signed_sensor && raw >= 0x80;
+}
+
 constexpr uint8_t kBoilerStatusCmd = 0x70;
 
 std::vector<Candidate> candidates_for(const Frame &frame) {
@@ -67,7 +74,7 @@ std::vector<Publication> Publisher::on_frame(const Frame &frame) {
   std::vector<Publication> published;
   for (const Candidate &candidate : candidates_for(frame)) {
     std::optional<uint8_t> &last = last_value_[static_cast<size_t>(candidate.sensor)];
-    if (last == candidate.value) continue;
+    if (last == candidate.value && !republishes_every_frame(candidate.sensor, candidate.value)) continue;
     last = candidate.value;
     published.push_back({candidate.sensor, published_value(candidate.sensor, candidate.value)});
   }

@@ -460,3 +460,40 @@ TEST(characterization_synthetic_stream_with_value_changes_junk_and_unknown_codes
   CHECK_EQ(old_seq.size(), new_seq.size());
   CHECK_EQ(-1, first_difference(old_seq, new_seq));
 }
+
+TEST(negative_outside_temperatures_republish_every_frame_like_old_int8_dedupe_quirk) {
+  // Pinned quirk (synthetic; the capture only has +5 C). Old code kept int8_t caches but compared them with the
+  // uint8_t value: for bytes 128..255 (negative temperatures) the comparison never matched, so every frame
+  // republished. Pre-existing bug, preserved by this extraction; registered separately as an issue.
+  scom::Publisher publisher;
+  for (int i = 0; i < 3; ++i) {
+    std::vector<Publication> out = publisher.on_frame(Frame{Kind::Read, 0x6C, 0xFB});
+    CHECK_EQ(1, out.size());
+    if (out.size() == 1) CHECK(is(out[0], Sensor::OutsideTemperature, -5.0f));
+  }
+  for (int i = 0; i < 3; ++i) {
+    std::vector<Publication> out = publisher.on_frame(Frame{Kind::Write, 0x71, 0xFB});
+    CHECK_EQ(1, out.size());
+    if (out.size() == 1) CHECK(is(out[0], Sensor::DwtOutsideTemperature, -5.0f));
+  }
+  // non-negative values still dedupe
+  CHECK_EQ(1, publisher.on_frame(Frame{Kind::Read, 0x6C, 0x05}).size());
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x6C, 0x05}).size());
+  // -128 (0x80) is the old cache's initial value, still republished every frame
+  CHECK_EQ(1, publisher.on_frame(Frame{Kind::Read, 0x6C, 0x80}).size());
+  CHECK_EQ(1, publisher.on_frame(Frame{Kind::Read, 0x6C, 0x80}).size());
+}
+
+TEST(characterization_negative_temperature_stream_matches_old) {
+  std::vector<uint8_t> s;
+  const uint8_t temps[] = {0x05, 0x05, 0xFB, 0xFB, 0xFB, 0x80, 0x80, 0x7F, 0x7F, 0x00, 0x00, 0xFF, 0xFE, 0xFE};
+  for (uint8_t t : temps) {
+    append_read(s, 0x6C, t);
+    append_write(s, 0x71, t);
+  }
+  oracle::Seq old_seq = oracle::run_old(s.data(), s.size());
+  oracle::Seq new_seq = run_new(s.data(), s.size());
+  CHECK_EQ(22, old_seq.size());  // 2 sensors x (14 frames - 3 deduped non-negative repeats)
+  CHECK_EQ(old_seq.size(), new_seq.size());
+  CHECK_EQ(-1, first_difference(old_seq, new_seq));
+}
