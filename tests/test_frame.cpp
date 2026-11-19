@@ -127,3 +127,17 @@ TEST(stream_parser_consumes_all_eight_bytes_of_unknown_command_frame) {
   for (uint8_t b : capture::kRead68) if (auto f = parser.push(b)) frames.push_back(*f);
   CHECK_EQ(2, frames.size());
 }
+
+TEST(stream_parser_replays_full_capture_as_198_frames_in_cycle_order) {
+  static_assert(capture::kCaptureLength == 1619, "capture has 1619 bytes");
+  const uint8_t cycle[12] = {0x6E, 0x72, 0x74, 0x6C, 0x71, 0x68, 0x6A, 0x6F, 0x65, 0xA0, 0x70, 0x67};
+  scom::StreamParser parser;
+  std::vector<scom::Frame> frames;
+  for (uint8_t b : capture::kCaptureBytes) if (auto f = parser.push(b)) frames.push_back(*f);
+  CHECK_EQ(198, frames.size());
+  int wrong_order = 0;
+  for (size_t i = 0; i < frames.size(); ++i) {
+    if (frames[i].cmd != cycle[i % 12]) ++wrong_order;
+  }
+  CHECK_EQ(0, wrong_order);
+}
