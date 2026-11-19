@@ -60,3 +60,10 @@ TEST(decode_accepts_structurally_valid_frame_with_unknown_command) {
   CHECK_EQ(0x99, f->cmd);
   CHECK_EQ(0x00, f->value);
 }
+
+TEST(decode_rejects_read_frame_whose_third_command_byte_differs) {
+  // old process_packet required command == buffer[4] for reads (parity, added to the plan as B7c)
+  auto read = capture::kRead68;
+  read[4] = 0x69;
+  CHECK(!scom::decode(read).has_value());
+}
