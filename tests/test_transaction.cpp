@@ -26,3 +26,18 @@ TEST(b12_after_echo_of_0x44_sends_command_byte) {
   CHECK_EQ(2, (int) port.written.size());
   if (port.written.size() >= 2) CHECK_EQ(capture::kRead68[2], port.written[1]);
 }
+
+// B13 [hypothesis]: master sends the third command byte; command 0x6A (capture: 44 44 6A 6A 6A 20 20 06)
+TEST(b13_after_echo_of_command_sends_third_command_byte) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x6A);
+  t.begin(1000);
+  t.on_rx(0x44, 1010);
+  t.on_rx(0x6A, 1020);
+  CHECK_EQ(3, (int) port.written.size());
+  if (port.written.size() >= 3) {
+    CHECK_EQ(0x44, port.written[0]);
+    CHECK_EQ(0x6A, port.written[1]);
+    CHECK_EQ(0x6A, port.written[2]);
+  }
+}
