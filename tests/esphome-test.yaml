@@ -1,0 +1,62 @@
+# Passive-mode compile test: the README configuration, unchanged behaviour (no master option).
+# scripts/gate.sh --esphome copies components/wolf_scom to ./components/wolf_scom next to this file.
+esphome:
+  name: wolf-scom-test
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+uart:
+  id: uart_bus
+  tx_pin: GPIO21
+  rx_pin: GPIO20
+  baud_rate: 2400
+
+wolf_scom:
+  id: wolf_scom_1
+  uart_id: uart_bus
+
+sensor:
+  - platform: wolf_scom
+    wolf_scom_id: wolf_scom_1
+    target_flow_temperature:
+      name: Target Flow Temperature
+    operation_mode:
+      name: Operation mode
+    outside_temperature:
+      name: Outside temperature
+    dwt_outside_temperature:
+      name: DWT Outside temperature
+    flow_temperature:
+      name: Flow Temperature
+    water_temperature:
+      name: Water Temperature
+    target_water_temperature:
+      name: Target Water Temperature
+    error_code:
+      name: Error code
+    rpm:
+      name: Fan RPM
+    boiler_status:
+      name: Boiler Status
+
+binary_sensor:
+  - platform: wolf_scom
+    wolf_scom_id: wolf_scom_1
+    heating:
+      name: Heating
+    hot_water:
+      name: Hot Water
+    heat:
+      name: Heat
+    pump:
+      name: Pump
+    three_way_valve:
+      name: Three Way Valve
