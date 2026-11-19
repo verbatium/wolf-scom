@@ -33,18 +33,21 @@ void WolfScom::on_trace(const std::vector<scom::TraceEntry> &trace) {
       ESP_LOGD(TAG, "%s +%ums %02X", entry.dir == scom::TraceDir::Tx ? "TX" : "RX", (unsigned) entry.t_ms, entry.byte);
     }
 }
-void WolfScom::on_refused() {}
+void WolfScom::on_refused() {
+    ESP_LOGE(TAG, "Bus traffic seen during the start-up listen window, another master is active; staying passive");
+    refused_ = true;
+}
 
 void WolfScom::loop() {
     while (available()) {
       uint8_t byte = read();
-      if (master_core_) {
+      if (master_core_ && !refused_) {
         master_core_->on_rx(byte, millis());
       } else {
         feed_passive(byte);
       }
     }
-    if (master_core_) master_core_->tick(millis());
+    if (master_core_ && !refused_) master_core_->tick(millis());
 }
 
 void WolfScom::feed_passive(uint8_t byte) {

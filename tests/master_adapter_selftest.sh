@@ -35,5 +35,11 @@ body() { awk "/WolfScom::$1\\(/{p=1} p{print} p&&(/\\{\\}\\s*\$/||/^}/){exit}" $
 check "B28 on_trace logs every trace entry at DEBUG" "body on_trace | grep -q 'ESP_LOGD' && body on_trace | grep -q 't_ms' && body on_trace | grep -Eq '%02[Xx]'"
 check "B28 on_frame logs the read command and value at INFO" "body on_frame | grep -q 'ESP_LOGI' && body on_frame | grep -q 'frame.cmd' && body on_frame | grep -q 'frame.value'"
 
+# B29: refusal -> ERROR log and the passive StreamParser path takes over. A flag is set (the Master must not be
+# destroyed from inside its own on_refused callback); loop() routes bytes to the passive path while the flag is set.
+check "B29 on_refused logs at ERROR" "body on_refused | grep -q 'ESP_LOGE'"
+check "B29 on_refused sets a flag instead of destroying the Master" "body on_refused | grep -Eq 'refused_ *= *true' && ! body on_refused | grep -Eq 'reset\\(|erase|delete'"
+check "B29 loop falls back to the passive path when refused" "body loop | grep -q 'refused_' && body loop | grep -q 'feed_passive'"
+
 [ "$bad" -eq 0 ] && echo "SELFTEST OK"
 exit "$bad"

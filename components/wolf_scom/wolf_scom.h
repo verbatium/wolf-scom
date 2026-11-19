@@ -55,6 +55,7 @@ namespace esphome {
           void on_refused() override;
          protected:
           bool master_ = false;
+          bool refused_ = false;
           std::optional<UartPort> uart_port_;
           std::optional<scom::Master> master_core_;
           scom::StreamParser parser_;
