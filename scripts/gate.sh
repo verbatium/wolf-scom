@@ -22,7 +22,7 @@ run_esphome_compile() {
   local workdir
   workdir="$(ssh "$ESPHOME_REMOTE" "$in_container mktemp -d")" || fail "cannot create work dir in ESPHOME_CONTAINER"
   [ -n "$workdir" ] || fail "container mktemp returned nothing"
-  COPYFILE_DISABLE=1 tar --exclude='._*' --exclude='.idea' --exclude='__pycache__' cf - components/wolf_scom tests/esphome-test*.yaml \
+  COPYFILE_DISABLE=1 tar -c -f - --exclude='._*' --exclude='.idea' --exclude='__pycache__' components/wolf_scom tests/esphome-test*.yaml \
     | ssh "$ESPHOME_REMOTE" "$in_container sh -c 'cd $workdir && tar xf - && mv tests/esphome-test*.yaml .'" \
     || fail "upload into ESPHOME_CONTAINER failed"
   local status=0 yaml
