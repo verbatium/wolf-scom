@@ -33,9 +33,19 @@ run_esphome_compile() {
   [ "$status" -eq 0 ] || fail "esphome compile failed"
 }
 
+run_selftests() {
+  [ -z "${GATE_TESTS_DIR:-}" ] || return 0
+  local script
+  for script in "${GATE_SELFTESTS_DIR:-tests}"/*selftest.sh; do
+    [ -e "$script" ] || continue
+    bash "$script" || fail "selftest failed: $script"
+  done
+}
+
 if [ "${1:-}" = "--esphome" ]; then
   run_esphome_compile
 else
   run_host_tests
+  run_selftests
 fi
 echo "GATE PASS"
