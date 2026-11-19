@@ -29,5 +29,11 @@ check "B27 RX bytes go to Master::on_rx with millis()" "grep -Eq 'master_core_->
 check "B27 loop ticks the Master with millis()" "grep -Eq 'master_core_->tick\\(millis\\(\\)\\)' $cpp"
 check "B27 the passive parser is fed from exactly one place" "[ \"\$(grep -c 'parser_.push' $cpp)\" = 1 ]"
 
+# B28: trace at DEBUG after the transaction ended (one line per entry with direction, relative ms, byte);
+# the read value at INFO.
+body() { awk "/WolfScom::$1\\(/{p=1} p{print} p&&(/\\{\\}\\s*\$/||/^}/){exit}" $cpp; }
+check "B28 on_trace logs every trace entry at DEBUG" "body on_trace | grep -q 'ESP_LOGD' && body on_trace | grep -q 't_ms' && body on_trace | grep -Eq '%02[Xx]'"
+check "B28 on_frame logs the read command and value at INFO" "body on_frame | grep -q 'ESP_LOGI' && body on_frame | grep -q 'frame.cmd' && body on_frame | grep -q 'frame.value'"
+
 [ "$bad" -eq 0 ] && echo "SELFTEST OK"
 exit "$bad"

@@ -24,9 +24,15 @@ void WolfScom::setup() {
     }
 }
 
-void WolfScom::on_frame(const scom::Frame &) {}
+void WolfScom::on_frame(const scom::Frame &frame) {
+    ESP_LOGI(TAG, "Read 0x%02X = %u", frame.cmd, frame.value);
+}
 void WolfScom::on_failure(scom::FailReason, uint8_t) {}
-void WolfScom::on_trace(const std::vector<scom::TraceEntry> &) {}
+void WolfScom::on_trace(const std::vector<scom::TraceEntry> &trace) {
+    for (const scom::TraceEntry &entry : trace) {
+      ESP_LOGD(TAG, "%s +%ums %02X", entry.dir == scom::TraceDir::Tx ? "TX" : "RX", (unsigned) entry.t_ms, entry.byte);
+    }
+}
 void WolfScom::on_refused() {}
 
 void WolfScom::loop() {
