@@ -67,3 +67,16 @@ TEST(decode_rejects_read_frame_whose_third_command_byte_differs) {
   read[4] = 0x69;
   CHECK(!scom::decode(read).has_value());
 }
+
+TEST(decode_rejects_write_frame_with_inconsistent_value_or_ack) {
+  // old process_packet: write needs byte5 == byte4, byte6 == 06, byte7 == byte4 (parity, added as B7d)
+  auto bad_echo = capture::kWrite6E;
+  bad_echo[5] = 0x28;
+  CHECK(!scom::decode(bad_echo).has_value());
+  auto bad_ack = capture::kWrite6E;
+  bad_ack[6] = 0x15;
+  CHECK(!scom::decode(bad_ack).has_value());
+  auto bad_trailer = capture::kWrite6E;
+  bad_trailer[7] = 0x28;
+  CHECK(!scom::decode(bad_trailer).has_value());
+}
