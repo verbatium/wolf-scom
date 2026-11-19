@@ -13,6 +13,7 @@ struct Step {
 namespace {
 
 constexpr uint8_t ReadHeader = 0x44;
+constexpr uint32_t EchoTimeoutMs = 150;
 
 // Read step tables v1. [hypothesis] which bytes the master drives.
 // Loopback: every own Send is mirrored onto RX first and must not be taken for the boiler echo.
@@ -37,10 +38,18 @@ Transaction::Transaction(BytePort &port, Kind kind, uint8_t cmd, bool loopback)
       steps_(loopback ? ReadStepsLoopback : ReadSteps),
       step_count_(loopback ? sizeof(ReadStepsLoopback) / sizeof(Step) : sizeof(ReadSteps) / sizeof(Step)) {}
 
-void Transaction::begin(uint32_t) { advance(); }
+void Transaction::begin(uint32_t now_ms) {
+  last_event_ms_ = now_ms;
+  advance();
+}
 
-void Transaction::on_rx(uint8_t byte, uint32_t) {
+void Transaction::tick(uint32_t now_ms) {
+  if (state_ == State::Running && now_ms - last_event_ms_ >= EchoTimeoutMs) fail(FailReason::Timeout);
+}
+
+void Transaction::on_rx(uint8_t byte, uint32_t now_ms) {
   if (state_ != State::Running) return;
+  last_event_ms_ = now_ms;
   if (!echoes_expected(byte)) return fail(FailReason::WrongEcho);
   if (steps_[step_].byte == Byte::Value) value_ = byte;
   ++step_;

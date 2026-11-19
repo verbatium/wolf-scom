@@ -161,3 +161,28 @@ TEST(b14b_loopback_does_not_treat_own_tx_as_boiler_echo) {
   CHECK(t.state() == scom::Transaction::State::Failed);
   CHECK(t.fail_reason() == scom::FailReason::WrongEcho);
 }
+
+// B16: echo timeout is 150 ms, measured from the last byte sent or received
+TEST(b16_no_echo_within_150ms_aborts_with_timeout) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  t.tick(1149);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.tick(1150);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::Timeout);
+  CHECK(!t.frame().has_value());
+}
+
+TEST(b16_timeout_is_measured_from_the_last_rx_byte) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  t.on_rx(0x44, 1100);  // echo arrives late but in time; the wait for the command echo restarts here
+  t.tick(1249);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.tick(1250);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::Timeout);
+}

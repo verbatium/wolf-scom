@@ -24,6 +24,7 @@ class Transaction {
   Transaction(BytePort &port, Kind kind, uint8_t cmd, bool loopback = false);
   void begin(uint32_t now_ms);
   void on_rx(uint8_t byte, uint32_t now_ms);
+  void tick(uint32_t now_ms);
   State state() const { return state_; }
   std::optional<Frame> frame() const { return frame_; }
   FailReason fail_reason() const { return fail_reason_; }
@@ -38,6 +39,7 @@ class Transaction {
   uint8_t cmd_;
   const Step *steps_;
   size_t step_count_;
+  uint32_t last_event_ms_ = 0;
   size_t step_ = 0;
   uint8_t value_ = 0;
   State state_ = State::Running;
