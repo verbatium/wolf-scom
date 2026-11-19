@@ -41,3 +41,36 @@ TEST(b13_after_echo_of_command_sends_third_command_byte) {
     CHECK_EQ(0x6A, port.written[2]);
   }
 }
+
+// B14a: no-loopback variant. The ESP only sees the boiler's bytes of the captured image
+// 44 44 68 68 68 1F 1F 06: idx1 (echo of 44), idx3 (echo of cmd), idx5..7 (value, value echo, ACK);
+// idx0, idx2, idx4 are its own TX.
+TEST(b14a_no_loopback_captured_read_completes_done_with_value) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[1], 1010);
+  t.on_rx(img[3], 1020);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[5], 1030);
+  t.on_rx(img[6], 1040);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[7], 1050);
+  CHECK(t.state() == scom::Transaction::State::Done);
+  auto frame = t.frame();
+  CHECK(frame.has_value());
+  if (frame) {
+    CHECK(frame->kind == scom::Kind::Read);
+    CHECK_EQ(0x68, frame->cmd);
+    CHECK_EQ(0x1F, frame->value);
+  }
+  // exactly the three own-TX bytes, nothing more
+  CHECK_EQ(3, (int) port.written.size());
+  if (port.written.size() == 3) {
+    CHECK_EQ(img[0], port.written[0]);
+    CHECK_EQ(img[2], port.written[1]);
+    CHECK_EQ(img[4], port.written[2]);
+  }
+}
