@@ -16,5 +16,12 @@ check "B25 to_code forwards master to the component" "grep -q 'set_master' $init
 check "B25 master YAML enables master" "grep -Eq '^  master: true' $yaml"
 check "B25 passive YAML keeps master unset" "! grep -Eq '^ *master:' tests/esphome-test.yaml"
 
+# B26: master false -> no Master object and no TX (AC1). Master is created only behind the master flag and the
+# only UART write call site is the BytePort adapter.
+check "B26 Master is held optionally (not a plain member)" "grep -Eq '(std::optional|std::unique_ptr)<scom::Master>' $hdr"
+check "B26 Master is created only when the master flag is set" "grep -Eq 'if \\((this->)?master_(enabled_)?\\)' $cpp && grep -Eq '(emplace|make_unique)' $cpp"
+check "B26 UartPort is the BytePort adapter" "grep -Eq 'struct UartPort|class UartPort' $hdr $cpp && grep -Eq 'UartPort *: *(public )?scom::BytePort' $hdr $cpp"
+check "B26 exactly one UART write call site" "[ \"\$(cat $cpp $hdr | grep -Ec 'write_byte|write_array|write_str')\" = 1 ]"
+
 [ "$bad" -eq 0 ] && echo "SELFTEST OK"
 exit "$bad"

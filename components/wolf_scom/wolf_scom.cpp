@@ -18,7 +18,16 @@ void publish_to(binary_sensor::BinarySensor *target, float value) {
 
 void WolfScom::setup() {
     ESP_LOGCONFIG(TAG, "Setting up WolfScom sensors...");
+    if (master_) {
+      uart_port_.emplace(*this);
+      master_core_.emplace(*uart_port_, *this, scom::Master::Config{/*loopback=*/true});
+    }
 }
+
+void WolfScom::on_frame(const scom::Frame &) {}
+void WolfScom::on_failure(scom::FailReason, uint8_t) {}
+void WolfScom::on_trace(const std::vector<scom::TraceEntry> &) {}
+void WolfScom::on_refused() {}
 
 void WolfScom::loop() {
     while (available()) {

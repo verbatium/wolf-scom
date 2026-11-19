@@ -5,12 +5,23 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 
+#include <optional>
+
 #include "scom_frame.h"
+#include "scom_master.h"
 #include "scom_publish.h"
 
 namespace esphome {
     namespace wolf_scom {
-        class WolfScom : public uart::UARTDevice, public Component  {
+        struct UartPort : scom::BytePort {
+          explicit UartPort(uart::UARTDevice &device) : device_(device) {}
+          void write(uint8_t byte) override { device_.write_byte(byte); }
+
+         private:
+          uart::UARTDevice &device_;
+        };
+
+        class WolfScom : public uart::UARTDevice, public Component, public scom::Listener {
          public:
           void set_target_flow_temperature_sensor(sensor::Sensor *sensor) { target_flow_temperature_sensor = sensor; }
           void set_heating_day_sensor(binary_sensor::BinarySensor *sensor) { heating_day_sensor = sensor; }
@@ -37,8 +48,15 @@ namespace esphome {
           void setup() override;
           void loop() override;
           void dump_config() override;
+
+          void on_frame(const scom::Frame &frame) override;
+          void on_failure(scom::FailReason reason, uint8_t cmd) override;
+          void on_trace(const std::vector<scom::TraceEntry> &trace) override;
+          void on_refused() override;
          protected:
           bool master_ = false;
+          std::optional<UartPort> uart_port_;
+          std::optional<scom::Master> master_core_;
           scom::StreamParser parser_;
           scom::Publisher publisher_;
 
