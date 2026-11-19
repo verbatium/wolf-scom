@@ -29,3 +29,11 @@ TEST(decode_rejects_echo_byte_differing_from_command) {
   write[3] = 0x6F;
   CHECK(!scom::decode(write).has_value());
 }
+
+TEST(decode_rejects_read_frame_whose_ack_is_not_06) {
+  auto read = capture::kRead68;
+  read[7] = 0x15;  // NAK-looking byte instead of ACK
+  CHECK(!scom::decode(read).has_value());
+  read[7] = 0x00;
+  CHECK(!scom::decode(read).has_value());
+}
