@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "capture_frames.h"
 #include "mini_test.h"
 #include "scom_frame.h"
@@ -92,4 +94,19 @@ TEST(decode_rejects_images_without_a_valid_header) {
   auto write_half_head = capture::kWrite6E;
   write_half_head[1] = 0x44;
   CHECK(!scom::decode(write_half_head).has_value());
+}
+
+TEST(stream_parser_resyncs_after_stray_junk_byte) {
+  scom::StreamParser parser;
+  std::vector<scom::Frame> frames;
+  auto feed = [&](uint8_t b) {
+    if (auto f = parser.push(b)) frames.push_back(*f);
+  };
+  feed(0x00);  // stray byte before the frame
+  for (uint8_t b : capture::kRead68) feed(b);
+  CHECK_EQ(1, frames.size());
+  if (frames.empty()) return;
+  CHECK(frames[0].kind == scom::Kind::Read);
+  CHECK_EQ(0x68, frames[0].cmd);
+  CHECK_EQ(0x1F, frames[0].value);
 }

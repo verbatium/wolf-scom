@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace scom {
 
@@ -14,5 +15,13 @@ struct Frame {
 };
 
 std::optional<Frame> decode(const std::array<uint8_t, 8> &image);
+
+class StreamParser {
+ public:
+  std::optional<Frame> push(uint8_t byte);
+
+ private:
+  std::vector<uint8_t> buffer_;
+};
 
 }  // namespace scom
