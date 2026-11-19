@@ -72,6 +72,8 @@ The DWT repeats the same 12 frames every **~7.8 s**:
 
 Observed values: `0x0C` (pump, idle), `0x0D` (pump + burner), `0x0E` (pump + DHW valve), `0x0F` (DHW charging, burner on), `0x08`.
 
+Implementation note: the component publishes a value of `0xFF` on its first occurrence. The pre-#3 code initialised its dedupe caches to 255 and silently swallowed it (fixed deliberately).
+
 ## Error codes (GG-2EK-S / GU-2EK-S manual)
 
 | Code | Meaning |
