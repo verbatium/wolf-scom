@@ -14,6 +14,11 @@ enum class Sensor {
   TargetWaterTemperature,
   ErrorCode,
   Rpm,
+  TargetFlowTemperature,
+  HeatingDay,
+  HotWaterDay,
+  OperationMode,
+  DwtOutsideTemperature,
   Count
 };
 

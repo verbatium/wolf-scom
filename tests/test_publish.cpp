@@ -68,3 +68,21 @@ TEST(publisher_ignores_unknown_command) {
   scom::Publisher publisher;
   CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x99, 0x00}).size());
 }
+
+TEST(publisher_maps_captured_write_commands_to_their_sensors) {
+  const Row rows[] = {
+      {Kind::Write, 0x6E, 0x27, Sensor::TargetFlowTemperature, 39.0f},
+      {Kind::Write, 0x72, 0x01, Sensor::HeatingDay, 1.0f},
+      {Kind::Write, 0x74, 0x00, Sensor::HotWaterDay, 0.0f},  // first value 0 is still published
+      {Kind::Write, 0x67, 0x14, Sensor::OperationMode, 20.0f},
+      {Kind::Write, 0x71, 0x05, Sensor::DwtOutsideTemperature, 5.0f},
+  };
+  check_rows(rows, sizeof(rows) / sizeof(rows[0]));
+}
+
+TEST(publisher_ignores_command_arriving_with_the_wrong_frame_kind) {
+  // old process_packet switched on the 53/44 header: a write code in a read frame (and vice versa) was unknown
+  scom::Publisher publisher;
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x6E, 0x27}).size());
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Write, 0x68, 0x1F}).size());
+}
