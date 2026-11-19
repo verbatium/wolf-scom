@@ -19,6 +19,10 @@ enum class Sensor {
   HotWaterDay,
   OperationMode,
   DwtOutsideTemperature,
+  BoilerStatus,
+  Pump,
+  Heat,
+  ThreeWayValve,
   Count
 };
 

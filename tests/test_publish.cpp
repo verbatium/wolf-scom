@@ -86,3 +86,39 @@ TEST(publisher_ignores_command_arriving_with_the_wrong_frame_kind) {
   CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x6E, 0x27}).size());
   CHECK_EQ(0, publisher.on_frame(Frame{Kind::Write, 0x68, 0x1F}).size());
 }
+
+TEST(publisher_splits_boiler_status_into_status_and_three_bit_sensors) {
+  // 0x0C = pump on, idle (captured). Old order: status, pump (bit2), heat (bit0), three-way valve (bit1)
+  scom::Publisher publisher;
+  std::vector<Publication> out = publisher.on_frame(Frame{Kind::Read, 0x70, 0x0C});
+  CHECK_EQ(4, out.size());
+  if (out.size() != 4) return;
+  CHECK(is(out[0], Sensor::BoilerStatus, 12.0f));
+  CHECK(is(out[1], Sensor::Pump, 1.0f));
+  CHECK(is(out[2], Sensor::Heat, 0.0f));
+  CHECK(is(out[3], Sensor::ThreeWayValve, 0.0f));
+}
+
+TEST(publisher_dedupes_each_status_bit_independently) {
+  scom::Publisher publisher;
+  publisher.on_frame(Frame{Kind::Read, 0x70, 0x0C});
+  // 0x0C -> 0x0D: burner on. status and heat change, pump and valve do not
+  std::vector<Publication> out = publisher.on_frame(Frame{Kind::Read, 0x70, 0x0D});
+  CHECK_EQ(2, out.size());
+  if (out.size() != 2) return;
+  CHECK(is(out[0], Sensor::BoilerStatus, 13.0f));
+  CHECK(is(out[1], Sensor::Heat, 1.0f));
+  // 0x0D -> 0x0E: heat off, valve on
+  out = publisher.on_frame(Frame{Kind::Read, 0x70, 0x0E});
+  CHECK_EQ(3, out.size());
+  if (out.size() != 3) return;
+  CHECK(is(out[0], Sensor::BoilerStatus, 14.0f));
+  CHECK(is(out[1], Sensor::Heat, 0.0f));
+  CHECK(is(out[2], Sensor::ThreeWayValve, 1.0f));
+  // 0x0E -> 0x0A: pump off only visible bit change besides status (0x0A = 1010b: bit1 stays)
+  out = publisher.on_frame(Frame{Kind::Read, 0x70, 0x0A});
+  CHECK_EQ(2, out.size());
+  if (out.size() != 2) return;
+  CHECK(is(out[0], Sensor::BoilerStatus, 10.0f));
+  CHECK(is(out[1], Sensor::Pump, 0.0f));
+}
