@@ -18,17 +18,18 @@ run_host_tests() {
 run_esphome_compile() {
   [ -n "${ESPHOME_REMOTE:-}" ] && [ -n "${ESPHOME_CONTAINER:-}" ] \
     || fail "--esphome needs env ESPHOME_REMOTE (ssh host) and ESPHOME_CONTAINER (docker container)"
-  local remote_dir
-  remote_dir="$(ssh "$ESPHOME_REMOTE" 'mktemp -d')" || fail "cannot reach ESPHOME_REMOTE"
-  [ -n "$remote_dir" ] || fail "remote mktemp returned nothing"
+  local in_container="docker exec -i $ESPHOME_CONTAINER"
+  local workdir
+  workdir="$(ssh "$ESPHOME_REMOTE" "$in_container mktemp -d")" || fail "cannot create work dir in ESPHOME_CONTAINER"
+  [ -n "$workdir" ] || fail "container mktemp returned nothing"
   tar cf - components/wolf_scom tests/esphome-test*.yaml \
-    | ssh "$ESPHOME_REMOTE" "cd '$remote_dir' && tar xf - && mv tests/esphome-test*.yaml ." \
-    || fail "upload to ESPHOME_REMOTE failed"
+    | ssh "$ESPHOME_REMOTE" "$in_container sh -c 'cd $workdir && tar xf - && mv tests/esphome-test*.yaml .'" \
+    || fail "upload into ESPHOME_CONTAINER failed"
   local status=0 yaml
   for yaml in tests/esphome-test*.yaml; do
-    ssh "$ESPHOME_REMOTE" "docker exec -w '$remote_dir' '$ESPHOME_CONTAINER' esphome compile '$(basename "$yaml")'" || status=1
+    ssh "$ESPHOME_REMOTE" "$in_container sh -c 'cd $workdir && esphome compile $(basename "$yaml")'" || status=1
   done
-  ssh "$ESPHOME_REMOTE" "rm -rf '$remote_dir'"
+  ssh "$ESPHOME_REMOTE" "$in_container rm -rf $workdir"
   [ "$status" -eq 0 ] || fail "esphome compile failed"
 }
 
