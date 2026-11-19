@@ -32,10 +32,13 @@ namespace esphome {
           //target_flow_temperature_sensor->set_unit_of_measurement("°C");
           //target_flow_temperature_sensor->set_device_class("temperature");
 
+          void set_master(bool master) { master_ = master; }
+
           void setup() override;
           void loop() override;
           void dump_config() override;
          protected:
+          bool master_ = false;
           scom::StreamParser parser_;
           scom::Publisher publisher_;
 
