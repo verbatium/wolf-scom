@@ -6,7 +6,6 @@ fail() { echo "${1:-}"; echo "GATE FAIL"; exit 1; }
 
 run_host_tests() {
   local tests_dir="${GATE_TESTS_DIR:-tests}"
-  local build_dir
   build_dir="$(mktemp -d)"
   trap 'rm -rf "$build_dir"' EXIT
   local core_sources=()
