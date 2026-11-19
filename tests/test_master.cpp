@@ -63,3 +63,41 @@ TEST(b21_rx_byte_in_listen_window_refuses_start_and_never_transmits) {
   CHECK_EQ(1, l.refused);
   CHECK_EQ(0, (int) l.frames.size());
 }
+
+// B21a: refusal is permanent until reboot, however long the bus stays silent afterwards
+TEST(b21a_refusal_is_permanent_after_long_silence) {
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  m.tick(0);
+  m.on_rx(0x53, 100);
+  for (uint32_t now = 100; now < 300000; now += 7) m.tick(now);
+  CHECK_EQ(0, (int) port.written.size());
+  CHECK_EQ(1, l.refused);
+}
+
+// B22: exactly 9 s of silence start the first transaction
+TEST(b22_first_transaction_starts_after_9s_of_silence) {
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  m.tick(2000);
+  m.tick(2000 + 8999);
+  CHECK_EQ(0, (int) port.written.size());
+  m.tick(2000 + 9000);
+  CHECK_EQ(1, (int) port.written.size());
+  if (!port.written.empty()) CHECK_EQ(0x44, port.written[0]);
+  CHECK_EQ(0, l.refused);
+}
+
+// B22a: an RX byte at 8.9 s is still inside the window
+TEST(b22a_rx_byte_at_8900ms_still_refuses_start) {
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  m.tick(2000);
+  m.on_rx(0x44, 2000 + 8900);
+  for (uint32_t now = 2000 + 8900; now < 2000 + 40000; now += 10) m.tick(now);
+  CHECK_EQ(0, (int) port.written.size());
+  CHECK_EQ(1, l.refused);
+}
