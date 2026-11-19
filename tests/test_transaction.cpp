@@ -252,3 +252,46 @@ TEST(b18_rx_before_the_wrap_restarts_timer_after_it) {
   t.tick(0xFFFFFFF0u + 150);
   CHECK(t.state() == scom::Transaction::State::Failed);
 }
+
+// B19: every TX event and RX byte recorded with timestamps relative to begin()
+TEST(b19_trace_records_tx_and_rx_with_relative_timestamps) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(5000);
+  t.on_rx(img[1], 5010);
+  t.on_rx(img[3], 5025);
+  t.on_rx(img[5], 5060);
+  t.on_rx(img[6], 5070);
+  t.on_rx(img[7], 5080);
+  const auto &tr = t.trace();
+  struct Expect { scom::TraceDir dir; uint32_t t; uint8_t byte; };
+  const Expect want[] = {
+      {scom::TraceDir::Tx, 0, 0x44},   {scom::TraceDir::Rx, 10, 0x44}, {scom::TraceDir::Tx, 10, 0x68},
+      {scom::TraceDir::Rx, 25, 0x68},  {scom::TraceDir::Tx, 25, 0x68}, {scom::TraceDir::Rx, 60, 0x1F},
+      {scom::TraceDir::Rx, 70, 0x1F},  {scom::TraceDir::Rx, 80, 0x06},
+  };
+  CHECK_EQ(8, (int) tr.size());
+  if (tr.size() == 8) {
+    for (size_t i = 0; i < 8; ++i) {
+      CHECK(tr[i].dir == want[i].dir);
+      CHECK_EQ((int) want[i].t, (int) tr[i].t_ms);
+      CHECK_EQ((int) want[i].byte, (int) tr[i].byte);
+    }
+  }
+}
+
+TEST(b19_trace_records_the_offending_byte_of_a_failed_transaction) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(100);
+  t.on_rx(0x45, 130);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  const auto &tr = t.trace();
+  CHECK_EQ(2, (int) tr.size());
+  if (tr.size() == 2) {
+    CHECK(tr[1].dir == scom::TraceDir::Rx);
+    CHECK_EQ(30, (int) tr[1].t_ms);
+    CHECK_EQ(0x45, (int) tr[1].byte);
+  }
+}

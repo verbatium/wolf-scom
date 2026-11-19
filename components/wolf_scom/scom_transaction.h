@@ -2,12 +2,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include "scom_frame.h"
 
 namespace scom {
 
 struct Step;
+
+enum class TraceDir { Tx, Rx };
+
+struct TraceEntry {
+  TraceDir dir;
+  uint32_t t_ms;  // relative to begin()
+  uint8_t byte;
+};
 
 enum class FailReason { None, WrongEcho, Timeout, NoAck };
 
@@ -28,9 +37,12 @@ class Transaction {
   State state() const { return state_; }
   std::optional<Frame> frame() const { return frame_; }
   FailReason fail_reason() const { return fail_reason_; }
+  const std::vector<TraceEntry> &trace() const { return trace_; }
 
  private:
-  void advance();
+  void advance(uint32_t now_ms);
+  void record(TraceDir dir, uint8_t byte, uint32_t now_ms);
+  void send(uint8_t byte, uint32_t now_ms);
   void fail(FailReason reason);
   bool echoes_expected(uint8_t byte) const;
 
@@ -39,7 +51,9 @@ class Transaction {
   uint8_t cmd_;
   const Step *steps_;
   size_t step_count_;
+  uint32_t begin_ms_ = 0;
   uint32_t last_event_ms_ = 0;
+  std::vector<TraceEntry> trace_;
   size_t step_ = 0;
   uint8_t value_ = 0;
   State state_ = State::Running;

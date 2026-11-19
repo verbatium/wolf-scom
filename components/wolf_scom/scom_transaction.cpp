@@ -40,8 +40,9 @@ Transaction::Transaction(BytePort &port, Kind kind, uint8_t cmd, bool loopback)
       step_count_(loopback ? sizeof(ReadStepsLoopback) / sizeof(Step) : sizeof(ReadSteps) / sizeof(Step)) {}
 
 void Transaction::begin(uint32_t now_ms) {
+  begin_ms_ = now_ms;
   last_event_ms_ = now_ms;
-  advance();
+  advance(now_ms);
 }
 
 void Transaction::tick(uint32_t now_ms) {
@@ -51,6 +52,7 @@ void Transaction::tick(uint32_t now_ms) {
 void Transaction::on_rx(uint8_t byte, uint32_t now_ms) {
   if (state_ != State::Running) return;
   last_event_ms_ = now_ms;
+  record(TraceDir::Rx, byte, now_ms);
   if (steps_[step_].byte == Byte::Ack && byte != AckByte) return fail(FailReason::NoAck);
   if (!echoes_expected(byte)) return fail(FailReason::WrongEcho);
   if (steps_[step_].byte == Byte::Value) value_ = byte;
@@ -60,7 +62,7 @@ void Transaction::on_rx(uint8_t byte, uint32_t now_ms) {
     frame_ = Frame{kind_, cmd_, value_};
     return;
   }
-  advance();
+  advance(now_ms);
 }
 
 bool Transaction::echoes_expected(uint8_t byte) const {
@@ -77,9 +79,18 @@ void Transaction::fail(FailReason reason) {
   fail_reason_ = reason;
 }
 
-void Transaction::advance() {
+void Transaction::record(TraceDir dir, uint8_t byte, uint32_t now_ms) {
+  trace_.push_back({dir, now_ms - begin_ms_, byte});
+}
+
+void Transaction::send(uint8_t byte, uint32_t now_ms) {
+  record(TraceDir::Tx, byte, now_ms);
+  port_.write(byte);
+}
+
+void Transaction::advance(uint32_t now_ms) {
   while (step_ < step_count_ && steps_[step_].action == Action::Send) {
-    port_.write(steps_[step_].byte == Byte::Header ? ReadHeader : cmd_);
+    send(steps_[step_].byte == Byte::Header ? ReadHeader : cmd_, now_ms);
     ++step_;
   }
 }
