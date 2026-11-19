@@ -186,3 +186,16 @@ TEST(b16_timeout_is_measured_from_the_last_rx_byte) {
   CHECK(t.state() == scom::Transaction::State::Failed);
   CHECK(t.fail_reason() == scom::FailReason::Timeout);
 }
+
+// B17
+TEST(b17_last_byte_other_than_06_aborts_with_no_ack) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  for (uint8_t b : {0x44, 0x68, 0x1F, 0x1F}) t.on_rx(b, 1010);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(0x07, 1050);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::NoAck);
+  CHECK(!t.frame().has_value());
+}
