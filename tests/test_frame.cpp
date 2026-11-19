@@ -80,3 +80,16 @@ TEST(decode_rejects_write_frame_with_inconsistent_value_or_ack) {
   bad_trailer[7] = 0x28;
   CHECK(!scom::decode(bad_trailer).has_value());
 }
+
+TEST(decode_rejects_images_without_a_valid_header) {
+  // old process_packet only looked at images starting 53 53 or 44 44 (added as B7e)
+  auto junk_head = capture::kRead68;
+  junk_head[0] = 0x00;
+  CHECK(!scom::decode(junk_head).has_value());
+  auto half_head = capture::kRead68;
+  half_head[1] = 0x53;
+  CHECK(!scom::decode(half_head).has_value());
+  auto write_half_head = capture::kWrite6E;
+  write_half_head[1] = 0x44;
+  CHECK(!scom::decode(write_half_head).has_value());
+}
