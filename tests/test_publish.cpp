@@ -508,3 +508,16 @@ TEST(publisher_reports_which_frames_carry_a_known_command) {
   CHECK(!scom::Publisher::is_known_command(Frame{Kind::Write, 0x68, 0x1F}));  // read code in a write frame
   CHECK(!scom::Publisher::is_known_command(Frame{Kind::Read, 0x6E, 0x27}));   // write code in a read frame
 }
+
+TEST(first_0xFF_value_on_an_unsigned_sensor_is_published) {
+  // B9d, owner-ratified bug fix: the old code initialised its uint8 caches to 255 (-1), so a first value of
+  // 0xFF was swallowed. The Publisher publishes it (and then dedupes the repeat).
+  scom::Publisher publisher;
+  std::vector<Publication> out = publisher.on_frame(Frame{Kind::Read, 0x65, 0xFF});
+  CHECK_EQ(1, out.size());
+  if (out.size() == 1) CHECK(is(out[0], Sensor::ErrorCode, 255.0f));
+  CHECK_EQ(0, publisher.on_frame(Frame{Kind::Read, 0x65, 0xFF}).size());
+  out = publisher.on_frame(Frame{Kind::Read, 0xA0, 0xFF});
+  CHECK_EQ(1, out.size());
+  if (out.size() == 1) CHECK(is(out[0], Sensor::Rpm, 255.0f));
+}
