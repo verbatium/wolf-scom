@@ -226,3 +226,27 @@ TEST(b17b_value_echo_mismatch_aborts_with_wrong_echo) {
   t.on_rx(0x06, 1030);
   CHECK(!t.frame().has_value());
 }
+
+// B18: millis() wraps uint32 during the wait
+TEST(b18_timeout_fires_across_uint32_millis_wrap) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  const uint32_t start = 0xFFFFFFF0u;
+  t.begin(start);
+  t.tick(start + 149);  // wrapped: 0x00000085
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.tick(start + 150);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::Timeout);
+}
+
+TEST(b18_rx_before_the_wrap_restarts_timer_after_it) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(0xFFFFFF00u);
+  t.on_rx(0x44, 0xFFFFFFF0u);
+  t.tick(0xFFFFFFF0u + 149);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.tick(0xFFFFFFF0u + 150);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+}
