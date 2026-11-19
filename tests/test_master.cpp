@@ -38,3 +38,15 @@ TEST(b19a_trace_is_delivered_after_failure_not_during) {
   CHECK_EQ(1, (int) l.traces.size());
   if (l.traces.size() == 1) CHECK_EQ(4, (int) l.traces[0].size());  // TX 44, RX 44, TX 68, RX 69
 }
+
+// B20: 9 s start-up listen window (GuardListenMs), measured from the first tick
+TEST(b20_master_emits_nothing_during_the_listen_window) {
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  const uint32_t first = 5000;
+  for (uint32_t now = first; now < first + 9000; now += 10) m.tick(now);
+  m.tick(first + 8999);
+  CHECK_EQ(0, (int) port.written.size());
+  CHECK_EQ(0, l.refused);
+}

@@ -35,6 +35,7 @@ class Master {
   Listener &listener_;
   Config config_;
   bool started_ = false;
+  std::optional<uint32_t> first_tick_ms_;
   std::optional<Transaction> transaction_;
 };
 

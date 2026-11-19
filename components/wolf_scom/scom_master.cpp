@@ -4,13 +4,18 @@ namespace scom {
 
 namespace {
 constexpr uint8_t FlowTemperatureCmd = 0x68;
+constexpr uint32_t GuardListenMs = 9000;
 }
 
 Master::Master(BytePort &port, Listener &listener, Config config)
     : port_(port), listener_(listener), config_(config) {}
 
 void Master::tick(uint32_t now_ms) {
-  if (!started_) return start_transaction(now_ms);
+  if (!first_tick_ms_) first_tick_ms_ = now_ms;
+  if (!started_) {
+    if (now_ms - *first_tick_ms_ >= GuardListenMs) start_transaction(now_ms);
+    return;
+  }
   if (!transaction_) return;
   transaction_->tick(now_ms);
   deliver_if_ended();
