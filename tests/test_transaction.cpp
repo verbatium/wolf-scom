@@ -233,6 +233,8 @@ TEST(b18_timeout_fires_across_uint32_millis_wrap) {
   scom::Transaction t(port, scom::Kind::Read, 0x68);
   const uint32_t start = 0xFFFFFFF0u;
   t.begin(start);
+  t.tick(start + 8);  // before the wrap: a naive `now >= start + 150` (wraps to 0x86) would fire here
+  CHECK(t.state() == scom::Transaction::State::Running);
   t.tick(start + 149);  // wrapped: 0x00000085
   CHECK(t.state() == scom::Transaction::State::Running);
   t.tick(start + 150);
