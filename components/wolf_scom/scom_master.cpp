@@ -1,0 +1,43 @@
+#include "scom_master.h"
+
+namespace scom {
+
+namespace {
+constexpr uint8_t FlowTemperatureCmd = 0x68;
+}
+
+Master::Master(BytePort &port, Listener &listener, Config config)
+    : port_(port), listener_(listener), config_(config) {}
+
+void Master::tick(uint32_t now_ms) {
+  if (!started_) return start_transaction(now_ms);
+  if (!transaction_) return;
+  transaction_->tick(now_ms);
+  deliver_if_ended();
+}
+
+void Master::on_rx(uint8_t byte, uint32_t now_ms) {
+  if (!transaction_) return;
+  transaction_->on_rx(byte, now_ms);
+  deliver_if_ended();
+}
+
+void Master::start_transaction(uint32_t now_ms) {
+  started_ = true;
+  transaction_.emplace(port_, Kind::Read, FlowTemperatureCmd, config_.loopback);
+  transaction_->begin(now_ms);
+}
+
+void Master::deliver_if_ended() {
+  const Transaction &t = *transaction_;
+  if (t.state() == Transaction::State::Running) return;
+  if (t.state() == Transaction::State::Done) {
+    listener_.on_frame(*t.frame());
+  } else {
+    listener_.on_failure(t.fail_reason(), FlowTemperatureCmd);
+  }
+  listener_.on_trace(t.trace());
+  transaction_.reset();
+}
+
+}  // namespace scom
