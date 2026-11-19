@@ -10,3 +10,12 @@ TEST(decode_captured_read_68) {
   CHECK_EQ(0x68, f->cmd);
   CHECK_EQ(0x1F, f->value);
 }
+
+TEST(decode_captured_write_6E) {
+  auto f = scom::decode(capture::kWrite6E);
+  CHECK(f.has_value());
+  if (!f) return;
+  CHECK(f->kind == scom::Kind::Write);
+  CHECK_EQ(0x6E, f->cmd);
+  CHECK_EQ(0x27, f->value);
+}
