@@ -5,6 +5,7 @@ namespace scom {
 namespace {
 constexpr uint8_t FlowTemperatureCmd = 0x68;
 constexpr uint32_t GuardListenMs = 9000;
+constexpr uint32_t CycleMs = 7800;
 }
 
 Master::Master(BytePort &port, Listener &listener, Config config)
@@ -13,13 +14,17 @@ Master::Master(BytePort &port, Listener &listener, Config config)
 void Master::tick(uint32_t now_ms) {
   if (refused_) return;
   if (!first_tick_ms_) first_tick_ms_ = now_ms;
-  if (!started_) {
-    if (now_ms - *first_tick_ms_ >= GuardListenMs) start_transaction(now_ms);
-    return;
+  if (transaction_) {
+    transaction_->tick(now_ms);
+    deliver_if_ended();
+  } else if (cycle_due(now_ms)) {
+    start_transaction(now_ms);
   }
-  if (!transaction_) return;
-  transaction_->tick(now_ms);
-  deliver_if_ended();
+}
+
+bool Master::cycle_due(uint32_t now_ms) const {
+  if (!started_) return now_ms - *first_tick_ms_ >= GuardListenMs;
+  return now_ms - cycle_start_ms_ >= CycleMs;
 }
 
 void Master::on_rx(uint8_t byte, uint32_t now_ms) {
@@ -37,6 +42,7 @@ void Master::refuse() {
 
 void Master::start_transaction(uint32_t now_ms) {
   started_ = true;
+  cycle_start_ms_ = now_ms;
   transaction_.emplace(port_, Kind::Read, FlowTemperatureCmd, config_.loopback);
   transaction_->begin(now_ms);
 }

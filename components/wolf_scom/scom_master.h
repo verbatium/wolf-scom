@@ -28,6 +28,7 @@ class Master {
   void tick(uint32_t now_ms);
 
  private:
+  bool cycle_due(uint32_t now_ms) const;
   void refuse();
   void start_transaction(uint32_t now_ms);
   void deliver_if_ended();
@@ -37,6 +38,7 @@ class Master {
   Config config_;
   bool started_ = false;
   bool refused_ = false;
+  uint32_t cycle_start_ms_ = 0;
   std::optional<uint32_t> first_tick_ms_;
   std::optional<Transaction> transaction_;
 };

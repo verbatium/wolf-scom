@@ -101,3 +101,46 @@ TEST(b22a_rx_byte_at_8900ms_still_refuses_start) {
   CHECK_EQ(0, (int) port.written.size());
   CHECK_EQ(1, l.refused);
 }
+
+// B23: the S2 cycle is a single READ 0x68; the Frame arrives through on_frame
+TEST(b23_cycle_is_read_0x68_only_and_delivers_the_frame) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  uint32_t t0 = tick_until_first_tx(m, port);
+  m.on_rx(img[1], t0 + 10);
+  m.on_rx(img[3], t0 + 20);
+  m.on_rx(img[5], t0 + 30);
+  m.on_rx(img[6], t0 + 40);
+  m.on_rx(img[7], t0 + 50);
+  CHECK_EQ(1, (int) l.frames.size());
+  if (l.frames.size() == 1) {
+    CHECK(l.frames[0].kind == scom::Kind::Read);
+    CHECK_EQ(0x68, l.frames[0].cmd);
+    CHECK_EQ(0x1F, l.frames[0].value);
+  }
+  CHECK_EQ(0, (int) l.failures.size());
+  CHECK_EQ(3, (int) port.written.size());
+  for (uint8_t b : port.written) CHECK(b != 0x53);  // no write frame in S2
+}
+
+// B24: the next cycle starts 7.8 s after the previous cycle STARTED
+TEST(b24_next_cycle_starts_7800ms_after_previous_cycle_start) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  RecordingListener l;
+  scom::Master m(port, l, scom::Master::Config{false});
+  uint32_t t0 = tick_until_first_tx(m, port);
+  m.on_rx(img[1], t0 + 10);
+  m.on_rx(img[3], t0 + 20);
+  m.on_rx(img[5], t0 + 30);
+  m.on_rx(img[6], t0 + 40);
+  m.on_rx(img[7], t0 + 50);
+  CHECK_EQ(3, (int) port.written.size());
+  m.tick(t0 + 7799);
+  CHECK_EQ(3, (int) port.written.size());
+  m.tick(t0 + 7800);
+  CHECK_EQ(4, (int) port.written.size());
+  if (port.written.size() == 4) CHECK_EQ(0x44, port.written[3]);
+}
