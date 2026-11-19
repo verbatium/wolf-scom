@@ -122,3 +122,22 @@ TEST(publisher_dedupes_each_status_bit_independently) {
   CHECK(is(out[0], Sensor::BoilerStatus, 10.0f));
   CHECK(is(out[1], Sensor::Pump, 0.0f));
 }
+
+TEST(publisher_publishes_outside_temperatures_as_signed_bytes) {
+  // 6C and 71 are int8 degrees C: 0xFB = -5, 0x80 = -128
+  const Row rows[] = {
+      {Kind::Read, 0x6C, 0xFB, Sensor::OutsideTemperature, -5.0f},
+      {Kind::Write, 0x71, 0xFB, Sensor::DwtOutsideTemperature, -5.0f},
+      {Kind::Read, 0x6C, 0x7F, Sensor::OutsideTemperature, 127.0f},
+  };
+  check_rows(rows, sizeof(rows) / sizeof(rows[0]));
+}
+
+TEST(publisher_publishes_binary_day_flags_as_zero_or_one) {
+  // old code passed the raw byte to a bool sensor: any non-zero value is true
+  const Row rows[] = {
+      {Kind::Write, 0x72, 0x02, Sensor::HeatingDay, 1.0f},
+      {Kind::Write, 0x74, 0x05, Sensor::HotWaterDay, 1.0f},
+  };
+  check_rows(rows, sizeof(rows) / sizeof(rows[0]));
+}

@@ -35,6 +35,19 @@ std::optional<Sensor> sensor_for(const Frame &frame) {
   return std::nullopt;
 }
 
+float published_value(Sensor sensor, uint8_t raw) {
+  switch (sensor) {
+    case Sensor::OutsideTemperature:
+    case Sensor::DwtOutsideTemperature:
+      return static_cast<float>(static_cast<int8_t>(raw));
+    case Sensor::HeatingDay:
+    case Sensor::HotWaterDay:
+      return raw != 0 ? 1.0f : 0.0f;
+    default:
+      return static_cast<float>(raw);
+  }
+}
+
 constexpr uint8_t kBoilerStatusCmd = 0x70;
 
 std::vector<Candidate> candidates_for(const Frame &frame) {
@@ -56,7 +69,7 @@ std::vector<Publication> Publisher::on_frame(const Frame &frame) {
     std::optional<uint8_t> &last = last_value_[static_cast<size_t>(candidate.sensor)];
     if (last == candidate.value) continue;
     last = candidate.value;
-    published.push_back({candidate.sensor, static_cast<float>(candidate.value)});
+    published.push_back({candidate.sensor, published_value(candidate.sensor, candidate.value)});
   }
   return published;
 }
