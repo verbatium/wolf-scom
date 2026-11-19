@@ -7,6 +7,8 @@
 
 namespace scom {
 
+struct Step;
+
 enum class FailReason { None, WrongEcho, Timeout, NoAck };
 
 class BytePort {
@@ -19,7 +21,7 @@ class Transaction {
  public:
   enum class State { Running, Done, Failed };
 
-  Transaction(BytePort &port, Kind kind, uint8_t cmd);
+  Transaction(BytePort &port, Kind kind, uint8_t cmd, bool loopback = false);
   void begin(uint32_t now_ms);
   void on_rx(uint8_t byte, uint32_t now_ms);
   State state() const { return state_; }
@@ -34,6 +36,8 @@ class Transaction {
   BytePort &port_;
   Kind kind_;
   uint8_t cmd_;
+  const Step *steps_;
+  size_t step_count_;
   size_t step_ = 0;
   uint8_t value_ = 0;
   State state_ = State::Running;

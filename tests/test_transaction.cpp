@@ -116,3 +116,48 @@ TEST(done_transaction_ignores_late_rx_bytes) {
   CHECK_EQ(0x1F, t.frame()->value);
   CHECK_EQ(3, (int) port.written.size());
 }
+
+// B14b: loopback variant (primary hypothesis for TSS721-style transceivers: own TX mirrored onto RX).
+// The ESP sees every byte of the captured image 44 44 68 68 68 1F 1F 06; idx0, idx2, idx4 are its own TX
+// looped back, idx1, idx3 the boiler echoes, idx5..7 value, value echo, ACK.
+TEST(b14b_loopback_captured_read_completes_done_without_premature_echo) {
+  const auto &img = capture::kRead68;
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68, /*loopback=*/true);
+  t.begin(1000);
+  CHECK_EQ(1, (int) port.written.size());
+  t.on_rx(img[0], 1001);  // own 44 looped back: NOT the boiler echo yet
+  CHECK_EQ(1, (int) port.written.size());
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[1], 1010);  // boiler echo
+  CHECK_EQ(2, (int) port.written.size());
+  t.on_rx(img[2], 1011);  // own cmd looped back
+  CHECK_EQ(2, (int) port.written.size());
+  t.on_rx(img[3], 1020);  // boiler echo
+  CHECK_EQ(3, (int) port.written.size());
+  t.on_rx(img[4], 1021);  // own third cmd looped back
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[5], 1030);
+  t.on_rx(img[6], 1040);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.on_rx(img[7], 1050);
+  CHECK(t.state() == scom::Transaction::State::Done);
+  auto frame = t.frame();
+  CHECK(frame.has_value());
+  if (frame) {
+    CHECK_EQ(0x68, frame->cmd);
+    CHECK_EQ(0x1F, frame->value);
+  }
+  CHECK_EQ(3, (int) port.written.size());
+}
+
+// a loopback transaction must not accept the no-loopback byte sequence (own TX is NOT the echo)
+TEST(b14b_loopback_does_not_treat_own_tx_as_boiler_echo) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68, /*loopback=*/true);
+  t.begin(1000);
+  t.on_rx(0x44, 1001);
+  t.on_rx(0x45, 1010);  // boiler echo must equal 0x44
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::WrongEcho);
+}

@@ -2,10 +2,6 @@
 
 namespace scom {
 
-namespace {
-
-constexpr uint8_t ReadHeader = 0x44;
-
 enum class Action { Send, Expect };
 enum class Byte { Header, Cmd, Value, ValueEcho, Ack };
 
@@ -14,26 +10,41 @@ struct Step {
   Byte byte;
 };
 
-// Read step table v1, no-loopback variant. [hypothesis] which bytes the master drives.
+namespace {
+
+constexpr uint8_t ReadHeader = 0x44;
+
+// Read step tables v1. [hypothesis] which bytes the master drives.
+// Loopback: every own Send is mirrored onto RX first and must not be taken for the boiler echo.
 constexpr Step ReadSteps[] = {
-    {Action::Send, Byte::Header},   {Action::Expect, Byte::Header},    {Action::Send, Byte::Cmd},
-    {Action::Expect, Byte::Cmd},    {Action::Send, Byte::Cmd},         {Action::Expect, Byte::Value},
+    {Action::Send, Byte::Header}, {Action::Expect, Byte::Header}, {Action::Send, Byte::Cmd},
+    {Action::Expect, Byte::Cmd},  {Action::Send, Byte::Cmd},      {Action::Expect, Byte::Value},
     {Action::Expect, Byte::ValueEcho}, {Action::Expect, Byte::Ack},
 };
-constexpr size_t ReadStepCount = sizeof(ReadSteps) / sizeof(ReadSteps[0]);
+constexpr Step ReadStepsLoopback[] = {
+    {Action::Send, Byte::Header}, {Action::Expect, Byte::Header}, {Action::Expect, Byte::Header},
+    {Action::Send, Byte::Cmd},    {Action::Expect, Byte::Cmd},    {Action::Expect, Byte::Cmd},
+    {Action::Send, Byte::Cmd},    {Action::Expect, Byte::Cmd},    {Action::Expect, Byte::Value},
+    {Action::Expect, Byte::ValueEcho}, {Action::Expect, Byte::Ack},
+};
 
 }  // namespace
 
-Transaction::Transaction(BytePort &port, Kind kind, uint8_t cmd) : port_(port), kind_(kind), cmd_(cmd) {}
+Transaction::Transaction(BytePort &port, Kind kind, uint8_t cmd, bool loopback)
+    : port_(port),
+      kind_(kind),
+      cmd_(cmd),
+      steps_(loopback ? ReadStepsLoopback : ReadSteps),
+      step_count_(loopback ? sizeof(ReadStepsLoopback) / sizeof(Step) : sizeof(ReadSteps) / sizeof(Step)) {}
 
 void Transaction::begin(uint32_t) { advance(); }
 
 void Transaction::on_rx(uint8_t byte, uint32_t) {
   if (state_ != State::Running) return;
   if (!echoes_expected(byte)) return fail(FailReason::WrongEcho);
-  if (ReadSteps[step_].byte == Byte::Value) value_ = byte;
+  if (steps_[step_].byte == Byte::Value) value_ = byte;
   ++step_;
-  if (step_ == ReadStepCount) {
+  if (step_ == step_count_) {
     state_ = State::Done;
     frame_ = Frame{kind_, cmd_, value_};
     return;
@@ -42,7 +53,7 @@ void Transaction::on_rx(uint8_t byte, uint32_t) {
 }
 
 bool Transaction::echoes_expected(uint8_t byte) const {
-  switch (ReadSteps[step_].byte) {
+  switch (steps_[step_].byte) {
     case Byte::Header: return byte == ReadHeader;
     case Byte::Cmd: return byte == cmd_;
     default: return true;
@@ -55,8 +66,8 @@ void Transaction::fail(FailReason reason) {
 }
 
 void Transaction::advance() {
-  while (step_ < ReadStepCount && ReadSteps[step_].action == Action::Send) {
-    port_.write(ReadSteps[step_].byte == Byte::Header ? ReadHeader : cmd_);
+  while (step_ < step_count_ && steps_[step_].action == Action::Send) {
+    port_.write(steps_[step_].byte == Byte::Header ? ReadHeader : cmd_);
     ++step_;
   }
 }
