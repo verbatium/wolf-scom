@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <optional>
 #include <vector>
 
@@ -6,7 +7,15 @@
 
 namespace scom {
 
-enum class Sensor { FlowTemperature };
+enum class Sensor {
+  FlowTemperature,
+  OutsideTemperature,
+  WaterTemperature,
+  TargetWaterTemperature,
+  ErrorCode,
+  Rpm,
+  Count
+};
 
 struct Publication {
   Sensor sensor;
@@ -18,7 +27,7 @@ class Publisher {
   std::vector<Publication> on_frame(const Frame &frame);
 
  private:
-  std::optional<uint8_t> last_flow_temperature_;
+  std::array<std::optional<uint8_t>, static_cast<size_t>(Sensor::Count)> last_value_;
 };
 
 }  // namespace scom
