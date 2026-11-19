@@ -49,3 +49,14 @@ TEST(decode_is_lenient_on_read_value_echo_like_old_process_packet) {
   CHECK_EQ(0x68, f->cmd);
   CHECK_EQ(0x1F, f->value);
 }
+
+TEST(decode_accepts_structurally_valid_frame_with_unknown_command) {
+  // synthetic: the capture contains no unknown code; old code consumed all 8 bytes
+  const std::array<uint8_t, 8> unknown = {0x44, 0x44, 0x99, 0x99, 0x99, 0x00, 0x00, 0x06};
+  auto f = scom::decode(unknown);
+  CHECK(f.has_value());
+  if (!f) return;
+  CHECK(f->kind == scom::Kind::Read);
+  CHECK_EQ(0x99, f->cmd);
+  CHECK_EQ(0x00, f->value);
+}
