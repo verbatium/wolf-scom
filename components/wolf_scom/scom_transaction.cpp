@@ -67,6 +67,7 @@ bool Transaction::echoes_expected(uint8_t byte) const {
   switch (steps_[step_].byte) {
     case Byte::Header: return byte == ReadHeader;
     case Byte::Cmd: return byte == cmd_;
+    case Byte::ValueEcho: return byte == value_;
     default: return true;
   }
 }

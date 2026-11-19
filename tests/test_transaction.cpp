@@ -199,3 +199,30 @@ TEST(b17_last_byte_other_than_06_aborts_with_no_ack) {
   CHECK(t.fail_reason() == scom::FailReason::NoAck);
   CHECK(!t.frame().has_value());
 }
+
+// B17a: silent ACK slot
+TEST(b17a_silent_ack_slot_aborts_with_timeout) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  for (uint8_t b : {0x44, 0x68, 0x1F, 0x1F}) t.on_rx(b, 1010);
+  t.tick(1159);
+  CHECK(t.state() == scom::Transaction::State::Running);
+  t.tick(1160);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::Timeout);
+}
+
+// B17b: value echo (byte6) must equal the value (byte5)
+TEST(b17b_value_echo_mismatch_aborts_with_wrong_echo) {
+  RecordingPort port;
+  scom::Transaction t(port, scom::Kind::Read, 0x68);
+  t.begin(1000);
+  for (uint8_t b : {0x44, 0x68, 0x1F}) t.on_rx(b, 1010);
+  t.on_rx(0x20, 1020);
+  CHECK(t.state() == scom::Transaction::State::Failed);
+  CHECK(t.fail_reason() == scom::FailReason::WrongEcho);
+  CHECK(!t.frame().has_value());
+  t.on_rx(0x06, 1030);
+  CHECK(!t.frame().has_value());
+}
