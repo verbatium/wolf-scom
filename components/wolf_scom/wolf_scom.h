@@ -5,6 +5,9 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 
+#include "scom_frame.h"
+#include "scom_publish.h"
+
 namespace esphome {
     namespace wolf_scom {
         class WolfScom : public uart::UARTDevice, public Component  {
@@ -32,28 +35,11 @@ namespace esphome {
           void setup() override;
           void loop() override;
           void dump_config() override;
-         private:
-             uint8_t last_target_flow_temperature = -1;  
-             int8_t last_outside_temperature = -128;
-             int8_t last_dwt_outside_temperature = -128;
-             uint8_t last_flow_temperature = -1;  
-             uint8_t last_water_temperature = -1;  
-             uint8_t last_target_water_temperature = -1;  
-             uint8_t last_error_code = -1;  
-             uint8_t last_rpm = -1;  
-             uint8_t last_boiler_status = -1;  
-             uint8_t last_operation_mode = -1;
-             uint8_t last_heating_day = -1;
-             uint8_t last_hot_water_day = -1;
-             uint8_t last_pump = -1;
-             uint8_t last_three_way_valve = -1;
-             uint8_t last_heat = -1;
-
-
          protected:
-          std::vector<uint8_t> buffer_;
+          scom::StreamParser parser_;
+          scom::Publisher publisher_;
 
-          bool process_packet();
+          void forward(const scom::Publication &publication);
 
           sensor::Sensor *target_flow_temperature_sensor = nullptr;
           binary_sensor::BinarySensor *heating_day_sensor = nullptr;
