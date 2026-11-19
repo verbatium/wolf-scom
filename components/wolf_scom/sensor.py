@@ -53,49 +53,49 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_BOILER_STATUS): empty_schema,
 }).extend({cv.GenerateID(): cv.declare_id(WolfScom)})
 
-def to_code(config):
-    paren = yield cg.get_variable(config[CONF_WOLF_SCOM_ID])
+async def to_code(config):
+    paren = await cg.get_variable(config[CONF_WOLF_SCOM_ID])
 
     if CONF_TARGET_FLOW_TEMPERATURE in config:
         conf = config[CONF_TARGET_FLOW_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_target_flow_temperature_sensor(sens))
 
     if CONF_OPERATION_MODE in config:
         conf = config[CONF_OPERATION_MODE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_operation_mode_sensor(sens))
 
     if CONF_OUTSIDE_TEMPERATURE in config:
         conf = config[CONF_OUTSIDE_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_outside_temperature_sensor(sens))
 
     if CONF_DWT_OUTSIDE_TEMPERATURE in config:
         conf = config[CONF_DWT_OUTSIDE_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_dwt_outside_temperature_sensor(sens))
     if CONF_FLOW_TEMPERATURE in config:
         conf = config[CONF_FLOW_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_flow_temperature_sensor(sens))
     if CONF_WATER_TEMPERATURE in config:
         conf = config[CONF_WATER_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_water_temperature_sensor(sens))
     if CONF_TARGET_WATER_TEMPERATURE in config:
         conf = config[CONF_TARGET_WATER_TEMPERATURE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_target_water_temperature_sensor(sens))
     if CONF_ERROR_CODE in config:
         conf = config[CONF_ERROR_CODE]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_error_code_sensor(sens))
     if CONF_RPM in config:
         conf = config[CONF_RPM]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_rpm_sensor(sens))
     if CONF_BOILER_STATUS in config:
         conf = config[CONF_BOILER_STATUS]
-        sens = yield sensor.new_sensor(conf)
+        sens = await sensor.new_sensor(conf)
         cg.add(paren.set_boiler_status_sensor(sens))
