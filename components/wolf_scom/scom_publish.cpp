@@ -70,6 +70,11 @@ std::vector<Candidate> candidates_for(const Frame &frame) {
 }
 }  // namespace
 
+bool Publisher::is_known_command(const Frame &frame) {
+  bool is_boiler_status = frame.kind == Kind::Read && frame.cmd == kBoilerStatusCmd;
+  return is_boiler_status || sensor_for(frame).has_value();
+}
+
 std::vector<Publication> Publisher::on_frame(const Frame &frame) {
   std::vector<Publication> published;
   for (const Candidate &candidate : candidates_for(frame)) {

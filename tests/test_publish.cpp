@@ -497,3 +497,14 @@ TEST(characterization_negative_temperature_stream_matches_old) {
   CHECK_EQ(old_seq.size(), new_seq.size());
   CHECK_EQ(-1, first_difference(old_seq, new_seq));
 }
+
+TEST(publisher_reports_which_frames_carry_a_known_command) {
+  // The adapter logs "Unknown command" (owner's discovery signal, see #4) when this is false; core stays log-free.
+  CHECK(scom::Publisher::is_known_command(Frame{Kind::Read, 0x68, 0x1F}));
+  CHECK(scom::Publisher::is_known_command(Frame{Kind::Read, 0x70, 0x0C}));
+  CHECK(scom::Publisher::is_known_command(Frame{Kind::Write, 0x6E, 0x27}));
+  CHECK(!scom::Publisher::is_known_command(Frame{Kind::Read, 0x99, 0x00}));
+  CHECK(!scom::Publisher::is_known_command(Frame{Kind::Write, 0x99, 0x00}));
+  CHECK(!scom::Publisher::is_known_command(Frame{Kind::Write, 0x68, 0x1F}));  // read code in a write frame
+  CHECK(!scom::Publisher::is_known_command(Frame{Kind::Read, 0x6E, 0x27}));   // write code in a read frame
+}

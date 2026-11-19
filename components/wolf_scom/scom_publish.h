@@ -34,6 +34,7 @@ struct Publication {
 class Publisher {
  public:
   std::vector<Publication> on_frame(const Frame &frame);
+  static bool is_known_command(const Frame &frame);
 
  private:
   std::array<std::optional<uint8_t>, static_cast<size_t>(Sensor::Count)> last_value_;
